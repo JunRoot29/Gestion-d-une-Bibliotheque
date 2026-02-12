@@ -1,0 +1,19 @@
+﻿@startuml
+actor Bibliothecaire
+participant "UI" as UI
+participant "ServiceEmprunt" as S
+database "DB" as DB
+
+Bibliothecaire -> UI : scanner carte + ISBN
+UI -> S : creerEmprunt(userId, ouvrageId)
+S -> DB : verifierDisponibilite(ouvrageId)
+DB --> S : disponible / indisponible
+alt disponible
+  S -> DB : inserer Emprunt
+  S -> DB : decrementer stock
+  S --> UI : succès
+else indisponible
+  S --> UI : refus + proposer réservation
+end
+UI --> Bibliothecaire : message
+@enduml

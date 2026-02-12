@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card auth-card">
+    <h2>Connexion</h2>
+    <form method="post" class="grid-form">
+        <label>Email
+            <input type="email" name="email" required>
+        </label>
+        <label>Mot de passe
+            <input type="password" name="password" required>
+        </label>
+        <button type="submit">Se connecter</button>
+    </form>
+    <p class="muted">Pas de compte ? <a href="{{ url_for('register') }}">Inscription usager</a></p>
+    <p class="muted">Admin par defaut: admin@bibliotheque.local / admin1234</p>
+</section>
+{% endblock %}

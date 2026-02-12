@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Comptes (admin)</h2>
+<section class="card">
+    <h3>Creer un compte</h3>
+    <form method="post" class="grid-form">
+        <label>Nom complet
+            <input name="full_name" required>
+        </label>
+        <label>Email
+            <input type="email" name="email" required>
+        </label>
+        <label>Telephone
+            <input name="phone">
+        </label>
+        <label>Type usager
+            <select name="user_type">
+                <option value="adherent">Adherent</option>
+                <option value="enseignant">Enseignant</option>
+                <option value="administrateur">Administrateur</option>
+            </select>
+        </label>
+        <label>Role applicatif
+            <select name="role">
+                <option value="user">Usager</option>
+                <option value="admin">Admin</option>
+            </select>
+        </label>
+        <label>Mot de passe initial
+            <input type="password" name="password" minlength="6" required>
+        </label>
+        <button type="submit">Creer</button>
+    </form>
+</section>
+
+<section class="card">
+    <h3>Liste des comptes</h3>
+    <table>
+        <thead>
+        <tr><th>ID</th><th>Nom</th><th>Email</th><th>Telephone</th><th>Type</th><th>Role</th></tr>
+        </thead>
+        <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.full_name }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.phone or '-' }}</td>
+            <td>{{ user.user_type }}</td>
+            <td>{{ user.role }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">Aucun compte.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

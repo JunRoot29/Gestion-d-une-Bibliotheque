@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Mon dashboard usager</h2>
+
+<section class="card">
+    <h3>Demander un emprunt</h3>
+    <form method="post" action="{{ url_for('create_loan_request') }}" class="grid-form">
+        <label>Ouvrage
+            <select name="book_id" required>
+                <option value="">Selectionner...</option>
+                {% for book in books %}
+                <option value="{{ book.id }}">{{ book.title }} - {{ book.author }} ({{ book.available_copies }} dispo)</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit">Envoyer la demande</button>
+    </form>
+</section>
+
+<section class="card">
+    <h3>Faire une reservation</h3>
+    <form method="post" action="{{ url_for('create_reservation') }}" class="grid-form">
+        <label>Ouvrage
+            <select name="book_id" required>
+                <option value="">Selectionner...</option>
+                {% for book in books %}
+                <option value="{{ book.id }}">{{ book.title }} - {{ book.author }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit">Reserver</button>
+    </form>
+</section>
+
+<section class="card">
+    <h3>Mes demandes d'emprunt</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Ouvrage</th><th>Date</th><th>Statut</th></tr></thead>
+        <tbody>
+            {% for req in my_requests %}
+            <tr>
+                <td>{{ req.id }}</td>
+                <td>{{ req.book_title }}</td>
+                <td>{{ req.request_date }}</td>
+                <td>{{ req.status }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4">Aucune demande.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="card">
+    <h3>Mes emprunts actifs</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Ouvrage</th><th>Date emprunt</th><th>Date limite</th></tr></thead>
+        <tbody>
+            {% for loan in my_active_loans %}
+            <tr>
+                <td>{{ loan.id }}</td>
+                <td>{{ loan.book_title }}</td>
+                <td>{{ loan.loan_date }}</td>
+                <td>{{ loan.due_date or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4">Aucun emprunt actif.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="card">
+    <h3>Mes reservations</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Ouvrage</th><th>Date</th><th>Statut</th><th>Action</th></tr></thead>
+        <tbody>
+            {% for reservation in my_reservations %}
+            <tr>
+                <td>{{ reservation.id }}</td>
+                <td>{{ reservation.book_title }}</td>
+                <td>{{ reservation.reservation_date }}</td>
+                <td>{{ reservation.status }}</td>
+                <td>
+                    {% if reservation.status == 'active' %}
+                    <form method="post" action="{{ url_for('cancel_own_reservation', reservation_id=reservation.id) }}">
+                        <button type="submit">Annuler</button>
+                    </form>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5">Aucune reservation.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="card">
+    <h3>Historique de mes emprunts</h3>
+    <table>
+        <thead><tr><th>ID</th><th>Ouvrage</th><th>Date emprunt</th><th>Date retour</th></tr></thead>
+        <tbody>
+            {% for loan in my_history %}
+            <tr>
+                <td>{{ loan.id }}</td>
+                <td>{{ loan.book_title }}</td>
+                <td>{{ loan.loan_date }}</td>
+                <td>{{ loan.return_date or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4">Aucun historique.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

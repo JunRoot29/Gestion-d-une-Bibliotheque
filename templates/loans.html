@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Gestion des emprunts (admin)</h2>
+
+<section class="card">
+    <h3>Demandes d'emprunt en attente</h3>
+    <table>
+        <thead>
+        <tr><th>ID</th><th>Usager</th><th>Ouvrage</th><th>Date demande</th><th>Disponibles</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for req in pending_requests %}
+        <tr>
+            <td>{{ req.id }}</td>
+            <td>{{ req.user_name }}</td>
+            <td>{{ req.book_title }}</td>
+            <td>{{ req.request_date }}</td>
+            <td>{{ req.available_copies }}</td>
+            <td class="actions-cell">
+                <form method="post" class="inline-form">
+                    <input type="hidden" name="action" value="approve_request">
+                    <input type="hidden" name="request_id" value="{{ req.id }}">
+                    <input type="date" name="due_date" title="Date limite">
+                    <button type="submit">Approuver</button>
+                </form>
+                <form method="post" class="inline-form">
+                    <input type="hidden" name="action" value="reject_request">
+                    <input type="hidden" name="request_id" value="{{ req.id }}">
+                    <button type="submit" class="danger">Rejeter</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">Aucune demande en attente.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="card">
+    <h3>Emprunts actifs</h3>
+    <table>
+        <thead>
+        <tr><th>ID</th><th>Usager</th><th>Ouvrage</th><th>Date emprunt</th><th>Date limite</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+        {% for loan in active_loans %}
+        <tr>
+            <td>{{ loan.id }}</td>
+            <td>{{ loan.user_name }}</td>
+            <td>{{ loan.book_title }}</td>
+            <td>{{ loan.loan_date }}</td>
+            <td>{{ loan.due_date or '-' }}</td>
+            <td>
+                <form method="post">
+                    <input type="hidden" name="action" value="return">
+                    <input type="hidden" name="loan_id" value="{{ loan.id }}">
+                    <button type="submit">Cloturer retour</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">Aucun emprunt actif.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="card">
+    <h3>Historique des emprunts</h3>
+    <table>
+        <thead>
+        <tr><th>ID</th><th>Usager</th><th>Ouvrage</th><th>Date emprunt</th><th>Date retour</th></tr>
+        </thead>
+        <tbody>
+        {% for loan in loan_history %}
+        <tr>
+            <td>{{ loan.id }}</td>
+            <td>{{ loan.user_name }}</td>
+            <td>{{ loan.book_title }}</td>
+            <td>{{ loan.loan_date }}</td>
+            <td>{{ loan.return_date or '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">Aucun historique.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

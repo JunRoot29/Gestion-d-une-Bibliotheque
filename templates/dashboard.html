@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Dashboard administrateur</h2>
+<section class="stats-grid">
+    <article class="card stat"><h3>Ouvrages</h3><p>{{ stats.books }}</p></article>
+    <article class="card stat"><h3>Usagers</h3><p>{{ stats.users }}</p></article>
+    <article class="card stat"><h3>Emprunts actifs</h3><p>{{ stats.active_loans }}</p></article>
+    <article class="card stat"><h3>Demandes en attente</h3><p>{{ stats.pending_requests }}</p></article>
+    <article class="card stat"><h3>Reservations actives</h3><p>{{ stats.active_reservations }}</p></article>
+</section>
+
+<section class="card">
+    <h3>Derniers emprunts</h3>
+    <table>
+        <thead>
+            <tr><th>ID</th><th>Ouvrage</th><th>Usager</th><th>Date</th><th>Retour</th></tr>
+        </thead>
+        <tbody>
+            {% for loan in recent_loans %}
+            <tr>
+                <td>{{ loan.id }}</td>
+                <td>{{ loan.book_title }}</td>
+                <td>{{ loan.user_name }}</td>
+                <td>{{ loan.loan_date }}</td>
+                <td>{{ loan.return_date or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5">Aucune donnee.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

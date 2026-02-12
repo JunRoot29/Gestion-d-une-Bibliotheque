@@ -1,0 +1,13 @@
+﻿@startuml
+actor Usager
+participant UI
+participant "ServiceReservation" as S
+database DB
+
+Usager -> UI : réserver ouvrage
+UI -> S : reserver(userId, ouvrageId)
+S -> DB : verifierDisponibilite
+DB --> S : indisponible
+S -> DB : creer Reservation(statut=ACTIVE)
+S --> UI : réservation confirmée
+@enduml

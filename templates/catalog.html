@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Catalogue et recherche</h2>
+
+<section class="card">
+    <h3>Recherche multi-criteres</h3>
+    <form method="get" class="grid-form">
+        <label>Titre
+            <input name="title" value="{{ filters.title }}">
+        </label>
+        <label>Auteur
+            <input name="author" value="{{ filters.author }}">
+        </label>
+        <label>ISBN
+            <input name="isbn" value="{{ filters.isbn }}">
+        </label>
+        <label>Editeur
+            <input name="publisher" value="{{ filters.publisher }}">
+        </label>
+        <label>Annee de parution
+            <input name="publication_year" value="{{ filters.publication_year }}">
+        </label>
+        <button type="submit">Rechercher</button>
+    </form>
+</section>
+
+<section class="card">
+    <h3>Resultats</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Titre</th>
+            <th>Auteur</th>
+            <th>Annee</th>
+            <th>Editeur</th>
+            <th>ISBN</th>
+            <th>Disponibles</th>
+            {% if session_user.role != 'admin' %}
+            <th>Actions</th>
+            {% endif %}
+        </tr>
+        </thead>
+        <tbody>
+        {% for book in books %}
+        <tr>
+            <td>{{ book.id }}</td>
+            <td>{{ book.title }}</td>
+            <td>{{ book.author }}</td>
+            <td>{{ book.publication_year or '-' }}</td>
+            <td>{{ book.publisher or '-' }}</td>
+            <td>{{ book.isbn or '-' }}</td>
+            <td>{{ book.available_copies }}</td>
+            {% if session_user.role != 'admin' %}
+            <td class="actions-cell">
+                <form method="post" action="{{ url_for('create_loan_request') }}" class="inline-form">
+                    <input type="hidden" name="book_id" value="{{ book.id }}">
+                    <button type="submit">Demander</button>
+                </form>
+                <form method="post" action="{{ url_for('create_reservation') }}" class="inline-form">
+                    <input type="hidden" name="book_id" value="{{ book.id }}">
+                    <button type="submit">Reserver</button>
+                </form>
+            </td>
+            {% endif %}
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="{% if session_user.role != 'admin' %}8{% else %}7{% endif %}">Aucun ouvrage trouve.</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

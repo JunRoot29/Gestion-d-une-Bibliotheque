@@ -1,0 +1,68 @@
+﻿@startuml
+class Utilisateur {
+  +id: int
+  +nom: str
+  +email: str
+  +mot_de_passe: str
+  +role: Role
+  +actif: bool
+}
+
+enum Role {
+  ADMIN
+  BIBLIOTHECAIRE
+  USAGER
+}
+
+class Ouvrage {
+  +id: int
+  +isbn: str
+  +titre: str
+  +auteur: str
+  +categorie: str
+  +annee: int
+  +nb_exemplaires_total: int
+  +nb_exemplaires_disponibles: int
+}
+
+class Emprunt {
+  +id: int
+  +date_emprunt: date
+  +date_retour_prevue: date
+  +date_retour_reelle: date
+  +statut: StatutEmprunt
+}
+
+enum StatutEmprunt {
+  EN_COURS
+  RETOURNE
+  EN_RETARD
+}
+
+class Reservation {
+  +id: int
+  +date_reservation: date
+  +expiration: date
+  +statut: StatutReservation
+}
+
+enum StatutReservation {
+  ACTIVE
+  HONOREE
+  ANNULEE
+  EXPIREE
+}
+
+class Penalite {
+  +id: int
+  +montant: float
+  +jours_retard: int
+  +payee: bool
+}
+
+Utilisateur "1" -- "0..*" Emprunt
+Ouvrage "1" -- "0..*" Emprunt
+Utilisateur "1" -- "0..*" Reservation
+Ouvrage "1" -- "0..*" Reservation
+Emprunt "0..1" -- "0..1" Penalite
+@enduml

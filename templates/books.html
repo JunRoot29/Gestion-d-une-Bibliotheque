@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Ouvrages (admin)</h2>
+<section class="card">
+    <h3>Ajouter un ouvrage</h3>
+    <form method="post" class="grid-form">
+        <label>Titre
+            <input name="title" required>
+        </label>
+        <label>Auteur
+            <input name="author" required>
+        </label>
+        <label>ISBN
+            <input name="isbn">
+        </label>
+        <label>Editeur
+            <input name="publisher">
+        </label>
+        <label>Annee de parution
+            <input name="publication_year" type="number" min="0">
+        </label>
+        <label>Nombre d'exemplaires
+            <input name="total_copies" type="number" min="1" value="1" required>
+        </label>
+        <button type="submit">Ajouter</button>
+    </form>
+</section>
+
+<section class="card">
+    <h3>Recherche dans le catalogue</h3>
+    <form method="get" class="grid-form">
+        <label>Titre
+            <input name="title" value="{{ filters.title }}">
+        </label>
+        <label>Auteur
+            <input name="author" value="{{ filters.author }}">
+        </label>
+        <label>ISBN
+            <input name="isbn" value="{{ filters.isbn }}">
+        </label>
+        <label>Editeur
+            <input name="publisher" value="{{ filters.publisher }}">
+        </label>
+        <label>Annee
+            <input name="publication_year" value="{{ filters.publication_year }}">
+        </label>
+        <button type="submit">Rechercher</button>
+    </form>
+</section>
+
+<section class="card">
+    <h3>Catalogue</h3>
+    <table>
+        <thead>
+        <tr><th>ID</th><th>Titre</th><th>Auteur</th><th>Annee</th><th>Editeur</th><th>ISBN</th><th>Total</th><th>Disponibles</th></tr>
+        </thead>
+        <tbody>
+        {% for book in books %}
+        <tr>
+            <td>{{ book.id }}</td>
+            <td>{{ book.title }}</td>
+            <td>{{ book.author }}</td>
+            <td>{{ book.publication_year or '-' }}</td>
+            <td>{{ book.publisher or '-' }}</td>
+            <td>{{ book.isbn or '-' }}</td>
+            <td>{{ book.total_copies }}</td>
+            <td>{{ book.available_copies }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8">Aucun ouvrage.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

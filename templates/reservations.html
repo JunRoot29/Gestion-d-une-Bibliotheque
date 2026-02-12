@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Reservations (admin)</h2>
+<section class="card">
+    <h3>Liste des reservations</h3>
+    <table>
+        <thead>
+        <tr><th>ID</th><th>Usager</th><th>Ouvrage</th><th>Date</th><th>Statut</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+        {% for reservation in reservations %}
+        <tr>
+            <td>{{ reservation.id }}</td>
+            <td>{{ reservation.user_name }}</td>
+            <td>{{ reservation.book_title }}</td>
+            <td>{{ reservation.reservation_date }}</td>
+            <td>{{ reservation.status }}</td>
+            <td>
+                {% if reservation.status == 'active' %}
+                <form method="post" action="{{ url_for('close_reservation', reservation_id=reservation.id) }}">
+                    <button type="submit">Cloturer</button>
+                </form>
+                {% else %}
+                -
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">Aucune reservation.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card auth-card">
+    <h2>Inscription usager</h2>
+    <form method="post" class="grid-form">
+        <label>Nom complet
+            <input name="full_name" required>
+        </label>
+        <label>Email
+            <input type="email" name="email" required>
+        </label>
+        <label>Telephone
+            <input name="phone">
+        </label>
+        <label>Mot de passe
+            <input type="password" name="password" minlength="6" required>
+        </label>
+        <label>Confirmer le mot de passe
+            <input type="password" name="password_confirm" minlength="6" required>
+        </label>
+        <button type="submit">Creer mon compte</button>
+    </form>
+    <p class="muted"><a href="{{ url_for('login') }}">Retour a la connexion</a></p>
+</section>
+{% endblock %}
