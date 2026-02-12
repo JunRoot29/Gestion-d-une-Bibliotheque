@@ -329,9 +329,45 @@ def user_dashboard():
         return redirect(url_for("admin_dashboard"))
 
     with get_db_connection() as conn:
+        user_stats = {
+            "active_loans": conn.execute(
+                "SELECT COUNT(*) AS c FROM loans WHERE user_id = ? AND return_date IS NULL",
+                (user["id"],),
+            ).fetchone()["c"],
+            "overdue_loans": conn.execute(
+                """
+                SELECT COUNT(*) AS c
+                FROM loans
+                WHERE user_id = ? AND return_date IS NULL
+                  AND due_date IS NOT NULL AND due_date < date('now')
+                """,
+                (user["id"],),
+            ).fetchone()["c"],
+            "pending_requests": conn.execute(
+                """
+                SELECT COUNT(*) AS c
+                FROM loan_requests
+                WHERE user_id = ? AND status = 'pending'
+                """,
+                (user["id"],),
+            ).fetchone()["c"],
+            "active_reservations": conn.execute(
+                """
+                SELECT COUNT(*) AS c
+                FROM reservations
+                WHERE user_id = ? AND status = 'active'
+                """,
+                (user["id"],),
+            ).fetchone()["c"],
+        }
+
         my_active_loans = conn.execute(
             """
-            SELECT l.id, l.loan_date, l.due_date, b.title AS book_title
+            SELECT l.id, l.loan_date, l.due_date, b.title AS book_title,
+                   CASE
+                       WHEN l.due_date IS NOT NULL AND l.due_date < date('now') THEN 1
+                       ELSE 0
+                   END AS is_overdue
             FROM loans l
             JOIN books b ON b.id = l.book_id
             WHERE l.user_id = ? AND l.return_date IS NULL
@@ -342,12 +378,37 @@ def user_dashboard():
 
         my_history = conn.execute(
             """
-            SELECT l.id, l.loan_date, l.return_date, b.title AS book_title
+            SELECT l.id, l.loan_date, l.due_date, l.return_date, b.title AS book_title
             FROM loans l
             JOIN books b ON b.id = l.book_id
             WHERE l.user_id = ?
             ORDER BY l.id DESC
             LIMIT 20
+            """,
+            (user["id"],),
+        ).fetchall()
+
+        overdue_details = conn.execute(
+            """
+            SELECT b.title AS book_title, l.due_date
+            FROM loans l
+            JOIN books b ON b.id = l.book_id
+            WHERE l.user_id = ? AND l.return_date IS NULL
+              AND l.due_date IS NOT NULL AND l.due_date < date('now')
+            ORDER BY l.due_date ASC
+            """,
+            (user["id"],),
+        ).fetchall()
+
+        due_soon = conn.execute(
+            """
+            SELECT b.title AS book_title, l.due_date
+            FROM loans l
+            JOIN books b ON b.id = l.book_id
+            WHERE l.user_id = ? AND l.return_date IS NULL
+              AND l.due_date IS NOT NULL
+              AND l.due_date BETWEEN date('now') AND date('now', '+3 day')
+            ORDER BY l.due_date ASC
             """,
             (user["id"],),
         ).fetchall()
@@ -378,8 +439,64 @@ def user_dashboard():
             "SELECT id, title, author, publication_year, available_copies FROM books ORDER BY title"
         ).fetchall()
 
+        suggested_books = conn.execute(
+            """
+            SELECT id, title, author, publication_year, available_copies
+            FROM books
+            WHERE available_copies > 0
+            ORDER BY available_copies DESC, title ASC
+            LIMIT 8
+            """
+        ).fetchall()
+
+        recent_activity = conn.execute(
+            """
+            SELECT event_date, event_type, item_title, status
+            FROM (
+                SELECT l.loan_date AS event_date,
+                       'Emprunt' AS event_type,
+                       b.title AS item_title,
+                       CASE
+                           WHEN l.return_date IS NULL THEN 'actif'
+                           ELSE 'retourne'
+                       END AS status
+                FROM loans l
+                JOIN books b ON b.id = l.book_id
+                WHERE l.user_id = ?
+
+                UNION ALL
+
+                SELECT r.request_date AS event_date,
+                       'Demande' AS event_type,
+                       b.title AS item_title,
+                       r.status AS status
+                FROM loan_requests r
+                JOIN books b ON b.id = r.book_id
+                WHERE r.user_id = ?
+
+                UNION ALL
+
+                SELECT rs.reservation_date AS event_date,
+                       'Reservation' AS event_type,
+                       b.title AS item_title,
+                       rs.status AS status
+                FROM reservations rs
+                JOIN books b ON b.id = rs.book_id
+                WHERE rs.user_id = ?
+            )
+            ORDER BY event_date DESC
+            LIMIT 12
+            """,
+            (user["id"], user["id"], user["id"]),
+        ).fetchall()
+
     return render_template(
         "user_dashboard.html",
+        user_stats=user_stats,
+        overdue_details=overdue_details,
+        due_soon=due_soon,
+        recent_activity=recent_activity,
+        suggested_books=suggested_books,
         my_active_loans=my_active_loans,
         my_history=my_history,
         my_requests=my_requests,
@@ -568,6 +685,9 @@ def loans():
             if not request_id:
                 flash("Demande invalide.", "error")
                 return redirect(url_for("loans"))
+            if not due_date:
+                flash("Veuillez renseigner une date de remise pour valider l'emprunt.", "error")
+                return redirect(url_for("loans"))
 
             with get_db_connection() as conn:
                 req = conn.execute(
@@ -690,7 +810,7 @@ def loans():
 
         loan_history = conn.execute(
             """
-            SELECT l.id, l.loan_date, l.return_date,
+            SELECT l.id, l.loan_date, l.due_date, l.return_date,
                    b.title AS book_title,
                    u.full_name AS user_name
             FROM loans l

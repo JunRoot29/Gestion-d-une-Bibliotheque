@@ -20,7 +20,7 @@
                 <form method="post" class="inline-form">
                     <input type="hidden" name="action" value="approve_request">
                     <input type="hidden" name="request_id" value="{{ req.id }}">
-                    <input type="date" name="due_date" title="Date limite">
+                    <input type="date" name="due_date" title="Date limite" required>
                     <button type="submit">Approuver</button>
                 </form>
                 <form method="post" class="inline-form">
@@ -70,7 +70,7 @@
     <h3>Historique des emprunts</h3>
     <table>
         <thead>
-        <tr><th>ID</th><th>Usager</th><th>Ouvrage</th><th>Date emprunt</th><th>Date retour</th></tr>
+        <tr><th>ID</th><th>Usager</th><th>Ouvrage</th><th>Date emprunt</th><th>Date limite</th><th>Date retour</th></tr>
         </thead>
         <tbody>
         {% for loan in loan_history %}
@@ -79,10 +79,11 @@
             <td>{{ loan.user_name }}</td>
             <td>{{ loan.book_title }}</td>
             <td>{{ loan.loan_date }}</td>
+            <td>{{ loan.due_date or '-' }}</td>
             <td>{{ loan.return_date or '-' }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="5">Aucun historique.</td></tr>
+        <tr><td colspan="6">Aucun historique.</td></tr>
         {% endfor %}
         </tbody>
     </table>
