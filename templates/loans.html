@@ -6,7 +6,7 @@
     <h3>Demandes d'emprunt en attente</h3>
     <table>
         <thead>
-        <tr><th>ID</th><th>Usager</th><th>Ouvrage</th><th>Date demande</th><th>Disponibles</th><th>Actions</th></tr>
+        <tr><th>ID</th><th>Usager</th><th>Ouvrage</th><th>Date demande</th><th>Disponibles</th><th>Etat usager</th><th>Actions</th></tr>
         </thead>
         <tbody>
         {% for req in pending_requests %}
@@ -16,12 +16,19 @@
             <td>{{ req.book_title }}</td>
             <td>{{ req.request_date }}</td>
             <td>{{ req.available_copies }}</td>
+            <td>
+                {% if req.user_suspended %}
+                <span class="status-chip status-danger">suspendu</span>
+                {% else %}
+                <span class="status-chip status-ok">actif</span>
+                {% endif %}
+            </td>
             <td class="actions-cell">
                 <form method="post" class="inline-form">
                     <input type="hidden" name="action" value="approve_request">
                     <input type="hidden" name="request_id" value="{{ req.id }}">
                     <input type="date" name="due_date" title="Date limite" required>
-                    <button type="submit">Approuver</button>
+                    <button type="submit" {% if req.user_suspended %}disabled{% endif %}>Approuver</button>
                 </form>
                 <form method="post" class="inline-form">
                     <input type="hidden" name="action" value="reject_request">
@@ -31,7 +38,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="6">Aucune demande en attente.</td></tr>
+        <tr><td colspan="7">Aucune demande en attente.</td></tr>
         {% endfor %}
         </tbody>
     </table>
@@ -41,7 +48,7 @@
     <h3>Emprunts actifs</h3>
     <table>
         <thead>
-        <tr><th>ID</th><th>Usager</th><th>Ouvrage</th><th>Date emprunt</th><th>Date limite</th><th>Action</th></tr>
+        <tr><th>ID</th><th>Usager</th><th>Ouvrage</th><th>Date emprunt</th><th>Date limite</th><th>Etat</th><th>Action</th></tr>
         </thead>
         <tbody>
         {% for loan in active_loans %}
@@ -52,6 +59,15 @@
             <td>{{ loan.loan_date }}</td>
             <td>{{ loan.due_date or '-' }}</td>
             <td>
+                {% if loan.is_overdue %}
+                <span class="status-chip status-danger">en retard</span>
+                {% elif loan.user_suspended %}
+                <span class="status-chip status-danger">usager suspendu</span>
+                {% else %}
+                <span class="status-chip status-ok">normal</span>
+                {% endif %}
+            </td>
+            <td>
                 <form method="post">
                     <input type="hidden" name="action" value="return">
                     <input type="hidden" name="loan_id" value="{{ loan.id }}">
@@ -60,7 +76,7 @@
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="6">Aucun emprunt actif.</td></tr>
+        <tr><td colspan="7">Aucun emprunt actif.</td></tr>
         {% endfor %}
         </tbody>
     </table>

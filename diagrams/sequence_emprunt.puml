@@ -1,19 +1,35 @@
-﻿@startuml
-actor Bibliothecaire
-participant "UI" as UI
-participant "ServiceEmprunt" as S
-database "DB" as DB
+@startuml
+actor Adherent
+actor Administrateur
+participant "UI Adherent" as UUI
+participant "UI Admin" as AUI
+participant "Flask App" as APP
+database DB
 
-Bibliothecaire -> UI : scanner carte + ISBN
-UI -> S : creerEmprunt(userId, ouvrageId)
-S -> DB : verifierDisponibilite(ouvrageId)
-DB --> S : disponible / indisponible
-alt disponible
-  S -> DB : inserer Emprunt
-  S -> DB : decrementer stock
-  S --> UI : succès
-else indisponible
-  S --> UI : refus + proposer réservation
+Adherent -> UUI : Choisir un ouvrage
+UUI -> APP : POST /me/loan-requests (book_id)
+APP -> DB : Verifier demande pending existante
+alt Demande deja en attente
+  APP --> UUI : Message d'erreur
+else Nouvelle demande
+  APP -> DB : INSERT loan_requests(status='pending')
+  APP --> UUI : Demande envoyee
 end
-UI --> Bibliothecaire : message
+
+Administrateur -> AUI : Ouvrir la liste des demandes
+AUI -> APP : POST /loans (action=approve_request)
+APP -> DB : Charger demande + verifier stock
+alt Demande invalide ou stock insuffisant
+  APP --> AUI : Refus de validation
+else Validation OK
+  APP -> DB : UPDATE loan_requests status='approved'
+  APP -> DB : INSERT loans(user_id, book_id, due_date)
+  APP -> DB : UPDATE books available_copies = available_copies - 1
+  APP --> AUI : Emprunt cree
+end
+
+Administrateur -> AUI : Rejeter une demande
+AUI -> APP : POST /loans (action=reject_request)
+APP -> DB : UPDATE loan_requests status='rejected'
+APP --> AUI : Demande rejetee
 @enduml

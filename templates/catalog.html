@@ -26,6 +26,11 @@
 
 <section class="card">
     <h3>Resultats</h3>
+    {% if session_user.role != 'admin' and session_user.is_suspended %}
+    <div class="alert-row danger-row">
+        <strong>Compte suspendu:</strong> demandes et reservations desactivees.
+    </div>
+    {% endif %}
     <table>
         <thead>
         <tr>
@@ -55,11 +60,11 @@
             <td class="actions-cell">
                 <form method="post" action="{{ url_for('create_loan_request') }}" class="inline-form">
                     <input type="hidden" name="book_id" value="{{ book.id }}">
-                    <button type="submit">Demander</button>
+                    <button type="submit" {% if session_user.is_suspended %}disabled{% endif %}>Demander</button>
                 </form>
                 <form method="post" action="{{ url_for('create_reservation') }}" class="inline-form">
                     <input type="hidden" name="book_id" value="{{ book.id }}">
-                    <button type="submit">Reserver</button>
+                    <button type="submit" {% if session_user.is_suspended %}disabled{% endif %}>Reserver</button>
                 </form>
             </td>
             {% endif %}

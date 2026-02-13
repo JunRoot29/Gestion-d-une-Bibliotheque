@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+from datetime import date
 from functools import wraps
 from pathlib import Path
 from typing import Optional
@@ -25,6 +26,49 @@ def get_db_connection() -> sqlite3.Connection:
 def _column_exists(conn: sqlite3.Connection, table: str, column: str) -> bool:
     rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
     return any(r["name"] == column for r in rows)
+
+
+def sync_user_suspensions(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        UPDATE users
+        SET is_suspended = 1,
+            suspension_origin = 'auto',
+            suspension_reason = 'Suspension automatique pour retard de retour.',
+            suspension_date = date('now')
+        WHERE role = 'user'
+          AND id IN (
+              SELECT DISTINCT user_id
+              FROM loans
+              WHERE return_date IS NULL
+                AND due_date IS NOT NULL
+                AND due_date < date('now')
+          )
+          AND (
+              is_suspended = 0
+              OR suspension_origin = 'auto'
+          )
+        """
+    )
+
+    conn.execute(
+        """
+        UPDATE users
+        SET is_suspended = 0,
+            suspension_origin = NULL,
+            suspension_reason = NULL,
+            suspension_date = NULL
+        WHERE role = 'user'
+          AND suspension_origin = 'auto'
+          AND id NOT IN (
+              SELECT DISTINCT user_id
+              FROM loans
+              WHERE return_date IS NULL
+                AND due_date IS NOT NULL
+                AND due_date < date('now')
+          )
+        """
+    )
 
 
 def search_books(
@@ -129,6 +173,18 @@ def init_db() -> None:
         if not _column_exists(conn, "users", "password_hash"):
             conn.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
 
+        if not _column_exists(conn, "users", "is_suspended"):
+            conn.execute("ALTER TABLE users ADD COLUMN is_suspended INTEGER NOT NULL DEFAULT 0")
+
+        if not _column_exists(conn, "users", "suspension_reason"):
+            conn.execute("ALTER TABLE users ADD COLUMN suspension_reason TEXT")
+
+        if not _column_exists(conn, "users", "suspension_origin"):
+            conn.execute("ALTER TABLE users ADD COLUMN suspension_origin TEXT")
+
+        if not _column_exists(conn, "users", "suspension_date"):
+            conn.execute("ALTER TABLE users ADD COLUMN suspension_date TEXT")
+
         if not _column_exists(conn, "books", "publisher"):
             conn.execute("ALTER TABLE books ADD COLUMN publisher TEXT")
 
@@ -158,6 +214,7 @@ def get_current_user() -> Optional[sqlite3.Row]:
     if not user_id:
         return None
     with get_db_connection() as conn:
+        sync_user_suspensions(conn)
         return conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
 
 
@@ -292,6 +349,15 @@ def logout():
 @admin_required
 def admin_dashboard():
     with get_db_connection() as conn:
+        inventory_totals = conn.execute(
+            """
+            SELECT
+                COALESCE(SUM(total_copies), 0) AS total_copies,
+                COALESCE(SUM(available_copies), 0) AS available_copies
+            FROM books
+            """
+        ).fetchone()
+
         stats = {
             "books": conn.execute("SELECT COUNT(*) AS c FROM books").fetchone()["c"],
             "users": conn.execute("SELECT COUNT(*) AS c FROM users WHERE role = 'user'").fetchone()["c"],
@@ -304,7 +370,39 @@ def admin_dashboard():
             "active_reservations": conn.execute(
                 "SELECT COUNT(*) AS c FROM reservations WHERE status = 'active'"
             ).fetchone()["c"],
+            "total_copies": inventory_totals["total_copies"],
+            "available_copies": inventory_totals["available_copies"],
+            "borrowed_copies": inventory_totals["total_copies"] - inventory_totals["available_copies"],
         }
+
+        request_status_rows = conn.execute(
+            """
+            SELECT status, COUNT(*) AS c
+            FROM loan_requests
+            GROUP BY status
+            """
+        ).fetchall()
+        request_status = {"pending": 0, "approved": 0, "rejected": 0}
+        for row in request_status_rows:
+            if row["status"] in request_status:
+                request_status[row["status"]] = row["c"]
+
+        weekly_rows = conn.execute(
+            """
+            WITH RECURSIVE days(day) AS (
+                SELECT date('now', '-6 day')
+                UNION ALL
+                SELECT date(day, '+1 day') FROM days WHERE day < date('now')
+            )
+            SELECT
+                day,
+                COALESCE((SELECT COUNT(*) FROM loans l WHERE l.loan_date = day), 0) AS loans_count,
+                COALESCE((SELECT COUNT(*) FROM loan_requests r WHERE r.request_date = day), 0) AS requests_count,
+                COALESCE((SELECT COUNT(*) FROM reservations rs WHERE rs.reservation_date = day), 0) AS reservations_count
+            FROM days
+            ORDER BY day
+            """
+        ).fetchall()
 
         recent_loans = conn.execute(
             """
@@ -318,7 +416,29 @@ def admin_dashboard():
             """
         ).fetchall()
 
-    return render_template("dashboard.html", stats=stats, recent_loans=recent_loans)
+    inventory_chart = {
+        "labels": ["Exemplaires disponibles", "Exemplaires empruntes"],
+        "values": [stats["available_copies"], stats["borrowed_copies"]],
+    }
+    requests_chart = {
+        "labels": ["En attente", "Approuvees", "Rejetees"],
+        "values": [request_status["pending"], request_status["approved"], request_status["rejected"]],
+    }
+    weekly_chart = {
+        "labels": [row["day"] for row in weekly_rows],
+        "loans": [row["loans_count"] for row in weekly_rows],
+        "requests": [row["requests_count"] for row in weekly_rows],
+        "reservations": [row["reservations_count"] for row in weekly_rows],
+    }
+
+    return render_template(
+        "dashboard.html",
+        stats=stats,
+        recent_loans=recent_loans,
+        inventory_chart=inventory_chart,
+        requests_chart=requests_chart,
+        weekly_chart=weekly_chart,
+    )
 
 
 @app.route("/me")
@@ -329,6 +449,8 @@ def user_dashboard():
         return redirect(url_for("admin_dashboard"))
 
     with get_db_connection() as conn:
+        sync_user_suspensions(conn)
+
         user_stats = {
             "active_loans": conn.execute(
                 "SELECT COUNT(*) AS c FROM loans WHERE user_id = ? AND return_date IS NULL",
@@ -490,6 +612,52 @@ def user_dashboard():
             (user["id"], user["id"], user["id"]),
         ).fetchall()
 
+        weekly_user_rows = conn.execute(
+            """
+            WITH RECURSIVE days(day) AS (
+                SELECT date('now', '-6 day')
+                UNION ALL
+                SELECT date(day, '+1 day') FROM days WHERE day < date('now')
+            )
+            SELECT
+                day,
+                COALESCE((
+                    SELECT COUNT(*)
+                    FROM loans l
+                    WHERE l.user_id = ? AND l.loan_date = day
+                ), 0) AS loans_count,
+                COALESCE((
+                    SELECT COUNT(*)
+                    FROM loan_requests r
+                    WHERE r.user_id = ? AND r.request_date = day
+                ), 0) AS requests_count,
+                COALESCE((
+                    SELECT COUNT(*)
+                    FROM reservations rs
+                    WHERE rs.user_id = ? AND rs.reservation_date = day
+                ), 0) AS reservations_count
+            FROM days
+            ORDER BY day
+            """,
+            (user["id"], user["id"], user["id"]),
+        ).fetchall()
+
+    user_overview_chart = {
+        "labels": ["Emprunts actifs", "Retards", "Demandes en attente", "Reservations actives"],
+        "values": [
+            user_stats["active_loans"],
+            user_stats["overdue_loans"],
+            user_stats["pending_requests"],
+            user_stats["active_reservations"],
+        ],
+    }
+    weekly_user_chart = {
+        "labels": [row["day"] for row in weekly_user_rows],
+        "loans": [row["loans_count"] for row in weekly_user_rows],
+        "requests": [row["requests_count"] for row in weekly_user_rows],
+        "reservations": [row["reservations_count"] for row in weekly_user_rows],
+    }
+
     return render_template(
         "user_dashboard.html",
         user_stats=user_stats,
@@ -502,6 +670,8 @@ def user_dashboard():
         my_requests=my_requests,
         my_reservations=my_reservations,
         books=books_list,
+        user_overview_chart=user_overview_chart,
+        weekly_user_chart=weekly_user_chart,
     )
 
 
@@ -511,6 +681,9 @@ def create_loan_request():
     user = get_current_user()
     if user and user["role"] == "admin":
         return redirect(url_for("admin_dashboard"))
+    if user and user["is_suspended"]:
+        flash("Votre compte est suspendu. Demande d'emprunt indisponible.", "error")
+        return redirect(url_for("user_dashboard"))
 
     book_id = request.form.get("book_id")
     if not book_id:
@@ -544,6 +717,9 @@ def create_reservation():
     user = get_current_user()
     if user and user["role"] == "admin":
         return redirect(url_for("admin_dashboard"))
+    if user and user["is_suspended"]:
+        flash("Votre compte est suspendu. Reservation indisponible.", "error")
+        return redirect(url_for("user_dashboard"))
 
     book_id = request.form.get("book_id")
     if not book_id:
@@ -597,8 +773,26 @@ def books():
         except ValueError:
             total_copies = -1
 
-        if not title or not author or total_copies < 1:
-            flash("Titre, auteur et nombre d'exemplaires valides sont requis.", "error")
+        available_raw = request.form.get("available_copies", "").strip()
+        if available_raw:
+            try:
+                available_copies = int(available_raw)
+            except ValueError:
+                available_copies = -1
+        else:
+            available_copies = total_copies
+
+        if (
+            not title
+            or not author
+            or total_copies < 1
+            or available_copies < 0
+            or available_copies > total_copies
+        ):
+            flash(
+                "Titre, auteur et exemplaires valides sont requis (disponibles <= total).",
+                "error",
+            )
             return redirect(url_for("books"))
 
         try:
@@ -609,7 +803,15 @@ def books():
                         title, author, isbn, publisher, publication_year, total_copies, available_copies
                     ) VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (title, author, isbn, publisher, publication_year, total_copies, total_copies),
+                    (
+                        title,
+                        author,
+                        isbn,
+                        publisher,
+                        publication_year,
+                        total_copies,
+                        available_copies,
+                    ),
                 )
             flash("Ouvrage ajoute.", "success")
         except sqlite3.IntegrityError:
@@ -627,8 +829,54 @@ def books():
 
     with get_db_connection() as conn:
         all_books = search_books(conn, **filters)
+        books_summary = conn.execute(
+            """
+            SELECT
+                COUNT(*) AS total_titles,
+                COALESCE(SUM(total_copies), 0) AS total_books,
+                COALESCE(SUM(available_copies), 0) AS available_books
+            FROM books
+            """
+        ).fetchone()
 
-    return render_template("books.html", books=all_books, filters=filters)
+    return render_template(
+        "books.html",
+        books=all_books,
+        filters=filters,
+        books_summary=books_summary,
+    )
+
+
+@app.post("/books/<int:book_id>/availability")
+@admin_required
+def update_book_availability(book_id: int):
+    available_raw = request.form.get("available_copies", "").strip()
+    try:
+        available_copies = int(available_raw)
+    except ValueError:
+        flash("Valeur invalide pour les exemplaires disponibles.", "error")
+        return redirect(url_for("books"))
+
+    with get_db_connection() as conn:
+        book = conn.execute(
+            "SELECT id, total_copies FROM books WHERE id = ?",
+            (book_id,),
+        ).fetchone()
+        if book is None:
+            flash("Ouvrage introuvable.", "error")
+            return redirect(url_for("books"))
+
+        if available_copies < 0 or available_copies > book["total_copies"]:
+            flash("Le nombre disponible doit etre entre 0 et le total.", "error")
+            return redirect(url_for("books"))
+
+        conn.execute(
+            "UPDATE books SET available_copies = ? WHERE id = ?",
+            (available_copies, book_id),
+        )
+
+    flash("Exemplaires disponibles mis a jour.", "success")
+    return redirect(url_for("books"))
 
 
 @app.route("/users", methods=["GET", "POST"])
@@ -666,11 +914,25 @@ def users():
         return redirect(url_for("users"))
 
     with get_db_connection() as conn:
+        sync_user_suspensions(conn)
         all_users = conn.execute(
-            "SELECT id, full_name, email, phone, user_type, role FROM users ORDER BY id DESC"
+            """
+            SELECT id, full_name, email, phone, user_type, role,
+                   is_suspended, suspension_reason, suspension_origin, suspension_date
+            FROM users
+            ORDER BY id DESC
+            """
+        ).fetchall()
+        suspended_users = conn.execute(
+            """
+            SELECT id, full_name, email, suspension_reason, suspension_origin, suspension_date
+            FROM users
+            WHERE role = 'user' AND is_suspended = 1
+            ORDER BY id DESC
+            """
         ).fetchall()
 
-    return render_template("users.html", users=all_users)
+    return render_template("users.html", users=all_users, suspended_users=suspended_users)
 
 
 @app.route("/loans", methods=["GET", "POST"])
@@ -688,8 +950,12 @@ def loans():
             if not due_date:
                 flash("Veuillez renseigner une date de remise pour valider l'emprunt.", "error")
                 return redirect(url_for("loans"))
+            if due_date < date.today().isoformat():
+                flash("La date limite doit etre aujourd'hui ou dans le futur.", "error")
+                return redirect(url_for("loans"))
 
             with get_db_connection() as conn:
+                sync_user_suspensions(conn)
                 req = conn.execute(
                     """
                     SELECT id, user_id, book_id, status
@@ -700,6 +966,14 @@ def loans():
                 ).fetchone()
                 if req is None or req["status"] != "pending":
                     flash("Demande introuvable ou deja traitee.", "error")
+                    return redirect(url_for("loans"))
+
+                borrower = conn.execute(
+                    "SELECT id, is_suspended FROM users WHERE id = ?",
+                    (req["user_id"],),
+                ).fetchone()
+                if borrower is None or borrower["is_suspended"]:
+                    flash("Usager suspendu: approbation impossible.", "error")
                     return redirect(url_for("loans"))
 
                 book = conn.execute(
@@ -736,6 +1010,7 @@ def loans():
                 return redirect(url_for("loans"))
 
             with get_db_connection() as conn:
+                sync_user_suspensions(conn)
                 conn.execute(
                     """
                     UPDATE loan_requests
@@ -755,6 +1030,7 @@ def loans():
                 return redirect(url_for("loans"))
 
             with get_db_connection() as conn:
+                sync_user_suspensions(conn)
                 loan = conn.execute(
                     "SELECT id, book_id, return_date FROM loans WHERE id = ?",
                     (loan_id,),
@@ -776,15 +1052,18 @@ def loans():
                     "UPDATE books SET available_copies = available_copies + 1 WHERE id = ?",
                     (loan["book_id"],),
                 )
+                sync_user_suspensions(conn)
 
             flash("Retour enregistre.", "success")
             return redirect(url_for("loans"))
 
     with get_db_connection() as conn:
+        sync_user_suspensions(conn)
         pending_requests = conn.execute(
             """
             SELECT r.id, r.request_date, r.status,
                    u.full_name AS user_name,
+                   u.is_suspended AS user_suspended,
                    b.title AS book_title,
                    b.available_copies AS available_copies
             FROM loan_requests r
@@ -799,7 +1078,12 @@ def loans():
             """
             SELECT l.id, l.loan_date, l.due_date,
                    b.title AS book_title,
-                   u.full_name AS user_name
+                   u.full_name AS user_name,
+                   u.is_suspended AS user_suspended,
+                   CASE
+                       WHEN l.due_date IS NOT NULL AND l.due_date < date('now') THEN 1
+                       ELSE 0
+                   END AS is_overdue
             FROM loans l
             JOIN books b ON b.id = l.book_id
             JOIN users u ON u.id = l.user_id
@@ -827,6 +1111,61 @@ def loans():
         active_loans=active_loans,
         loan_history=loan_history,
     )
+
+
+@app.post("/users/<int:user_id>/suspend")
+@admin_required
+def suspend_user(user_id: int):
+    reason = request.form.get("reason", "").strip() or "Suspension manuelle par administrateur."
+    with get_db_connection() as conn:
+        user = conn.execute(
+            "SELECT id, role FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+        if user is None or user["role"] != "user":
+            flash("Compte usager introuvable.", "error")
+            return redirect(url_for("users"))
+
+        conn.execute(
+            """
+            UPDATE users
+            SET is_suspended = 1,
+                suspension_reason = ?,
+                suspension_origin = 'manual',
+                suspension_date = date('now')
+            WHERE id = ?
+            """,
+            (reason, user_id),
+        )
+    flash("Usager suspendu.", "success")
+    return redirect(url_for("users"))
+
+
+@app.post("/users/<int:user_id>/unsuspend")
+@admin_required
+def unsuspend_user(user_id: int):
+    with get_db_connection() as conn:
+        user = conn.execute(
+            "SELECT id, role FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+        if user is None or user["role"] != "user":
+            flash("Compte usager introuvable.", "error")
+            return redirect(url_for("users"))
+
+        conn.execute(
+            """
+            UPDATE users
+            SET is_suspended = 0,
+                suspension_reason = NULL,
+                suspension_origin = NULL,
+                suspension_date = NULL
+            WHERE id = ?
+            """,
+            (user_id,),
+        )
+    flash("Suspension levee.", "success")
+    return redirect(url_for("users"))
 
 
 @app.route("/reservations")

@@ -32,7 +32,12 @@
     </nav>
 
     <div class="session-box">
-        <span>{{ session_user.full_name }} <small>({{ session_user.role }})</small></span>
+        <span>
+            {{ session_user.full_name }} <small>({{ session_user.role }})</small>
+            {% if session_user.role == 'user' and session_user.is_suspended %}
+            <small class="user-suspended-label">suspendu</small>
+            {% endif %}
+        </span>
         <form method="post" action="{{ url_for('logout') }}">
             <button type="submit">Deconnexion</button>
         </form>
@@ -51,5 +56,14 @@
 
     {% block content %}{% endblock %}
 </main>
+
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <p>Bibliotheque - Plateforme de gestion des ouvrages et des usagers.<br></p>
+        <p>TP - Génie Logiciel, Modélisation d’un Système de Gestion de Bibliothèque</p>
+        <p>&copy; {{ 2026 }} BiblioFlow</p>
+    </div>
+</footer>
+{% block scripts %}{% endblock %}
 </body>
 </html>

@@ -1,16 +1,17 @@
-﻿@startuml
-actor Bibliothecaire
-participant UI
-participant "ServiceRetour" as S
+@startuml
+actor Administrateur
+participant "UI Admin" as UI
+participant "Flask App" as APP
 database DB
 
-Bibliothecaire -> UI : enregistrer retour
-UI -> S : retourner(empruntId)
-S -> DB : maj date_retour_reelle + statut
-S -> S : calculerRetard()
-alt retard > 0
-  S -> DB : creer Penalite
+Administrateur -> UI : Enregistrer le retour d'un emprunt
+UI -> APP : POST /loans (action=return, loan_id)
+APP -> DB : SELECT loan by id
+alt Emprunt introuvable ou deja retourne
+  APP --> UI : Message d'erreur
+else Emprunt actif
+  APP -> DB : UPDATE loans SET return_date = date('now')
+  APP -> DB : UPDATE books SET available_copies = available_copies + 1
+  APP --> UI : Retour enregistre
 end
-S -> DB : incrementer stock ouvrage
-S --> UI : retour validé
 @enduml

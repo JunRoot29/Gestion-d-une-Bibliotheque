@@ -3,10 +3,28 @@
 <h2>Dashboard administrateur</h2>
 <section class="stats-grid">
     <article class="card stat"><h3>Ouvrages</h3><p>{{ stats.books }}</p></article>
+    <article class="card stat"><h3>Total des livres</h3><p>{{ stats.total_copies }}</p></article>
+    <article class="card stat"><h3>Disponibles</h3><p>{{ stats.available_copies }}</p></article>
     <article class="card stat"><h3>Usagers</h3><p>{{ stats.users }}</p></article>
     <article class="card stat"><h3>Emprunts actifs</h3><p>{{ stats.active_loans }}</p></article>
     <article class="card stat"><h3>Demandes en attente</h3><p>{{ stats.pending_requests }}</p></article>
     <article class="card stat"><h3>Reservations actives</h3><p>{{ stats.active_reservations }}</p></article>
+</section>
+
+<section class="dashboard-grid">
+    <article class="card chart-card">
+        <h3>Etat du stock</h3>
+        <div class="chart-wrap"><canvas id="inventoryChart"></canvas></div>
+    </article>
+    <article class="card chart-card">
+        <h3>Demandes d'emprunt</h3>
+        <div class="chart-wrap"><canvas id="requestStatusChart"></canvas></div>
+    </article>
+</section>
+
+<section class="card chart-card">
+    <h3>Activite des 7 derniers jours</h3>
+    <div class="chart-wrap"><canvas id="weeklyActivityChart"></canvas></div>
 </section>
 
 <section class="card">
@@ -30,4 +48,59 @@
         </tbody>
     </table>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const inventoryData = {{ inventory_chart | tojson }};
+const requestsData = {{ requests_chart | tojson }};
+const weeklyData = {{ weekly_chart | tojson }};
+
+new Chart(document.getElementById("inventoryChart"), {
+    type: "doughnut",
+    data: {
+        labels: inventoryData.labels,
+        datasets: [{
+            data: inventoryData.values,
+            backgroundColor: ["#11a88b", "#0f6d9a"]
+        }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+});
+
+new Chart(document.getElementById("requestStatusChart"), {
+    type: "bar",
+    data: {
+        labels: requestsData.labels,
+        datasets: [{
+            label: "Demandes",
+            data: requestsData.values,
+            backgroundColor: ["#f6ad55", "#48bb78", "#f56565"]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+});
+
+new Chart(document.getElementById("weeklyActivityChart"), {
+    type: "line",
+    data: {
+        labels: weeklyData.labels,
+        datasets: [
+            { label: "Emprunts", data: weeklyData.loans, borderColor: "#0f6d9a", tension: 0.25 },
+            { label: "Demandes", data: weeklyData.requests, borderColor: "#dd6b20", tension: 0.25 },
+            { label: "Reservations", data: weeklyData.reservations, borderColor: "#2f855a", tension: 0.25 }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+});
+</script>
 {% endblock %}

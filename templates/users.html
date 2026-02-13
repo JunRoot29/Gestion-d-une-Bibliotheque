@@ -2,6 +2,34 @@
 {% block content %}
 <h2>Comptes (admin)</h2>
 <section class="card">
+    <h3>Usagers suspendus</h3>
+    <table>
+        <thead>
+        <tr><th>ID</th><th>Nom</th><th>Email</th><th>Origine</th><th>Date</th><th>Raison</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+        {% for user in suspended_users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.full_name }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.suspension_origin or '-' }}</td>
+            <td>{{ user.suspension_date or '-' }}</td>
+            <td>{{ user.suspension_reason or '-' }}</td>
+            <td>
+                <form method="post" action="{{ url_for('unsuspend_user', user_id=user.id) }}">
+                    <button type="submit">Lever</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7">Aucun usager suspendu.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="card">
     <h3>Creer un compte</h3>
     <form method="post" class="grid-form">
         <label>Nom complet
@@ -37,7 +65,7 @@
     <h3>Liste des comptes</h3>
     <table>
         <thead>
-        <tr><th>ID</th><th>Nom</th><th>Email</th><th>Telephone</th><th>Type</th><th>Role</th></tr>
+        <tr><th>ID</th><th>Nom</th><th>Email</th><th>Telephone</th><th>Type</th><th>Role</th><th>Etat</th><th>Action</th></tr>
         </thead>
         <tbody>
         {% for user in users %}
@@ -48,9 +76,30 @@
             <td>{{ user.phone or '-' }}</td>
             <td>{{ user.user_type }}</td>
             <td>{{ user.role }}</td>
+            <td>
+                {% if user.role == 'user' and user.is_suspended %}
+                <span class="status-chip status-danger">suspendu</span>
+                {% else %}
+                <span class="status-chip status-ok">actif</span>
+                {% endif %}
+            </td>
+            <td class="actions-cell">
+                {% if user.role == 'user' and user.is_suspended %}
+                <form method="post" action="{{ url_for('unsuspend_user', user_id=user.id) }}" class="inline-form">
+                    <button type="submit">Lever</button>
+                </form>
+                {% elif user.role == 'user' %}
+                <form method="post" action="{{ url_for('suspend_user', user_id=user.id) }}" class="inline-form">
+                    <input type="text" name="reason" placeholder="Raison (optionnel)">
+                    <button type="submit" class="danger">Suspendre</button>
+                </form>
+                {% else %}
+                -
+                {% endif %}
+            </td>
         </tr>
         {% else %}
-        <tr><td colspan="6">Aucun compte.</td></tr>
+        <tr><td colspan="8">Aucun compte.</td></tr>
         {% endfor %}
         </tbody>
     </table>

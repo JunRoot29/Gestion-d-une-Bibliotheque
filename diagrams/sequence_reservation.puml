@@ -1,13 +1,27 @@
-﻿@startuml
-actor Usager
-participant UI
-participant "ServiceReservation" as S
+@startuml
+actor Adherent
+actor Administrateur
+participant "UI Adherent" as UUI
+participant "UI Admin" as AUI
+participant "Flask App" as APP
 database DB
 
-Usager -> UI : réserver ouvrage
-UI -> S : reserver(userId, ouvrageId)
-S -> DB : verifierDisponibilite
-DB --> S : indisponible
-S -> DB : creer Reservation(statut=ACTIVE)
-S --> UI : réservation confirmée
+Adherent -> UUI : Reserver un ouvrage
+UUI -> APP : POST /me/reservations (book_id)
+APP -> DB : INSERT reservations(status='active')
+APP --> UUI : Reservation enregistree
+
+Adherent -> UUI : Annuler sa reservation
+UUI -> APP : POST /me/reservations/{id}/cancel
+APP -> DB : UPDATE reservations status='closed'
+note right
+Condition SQL:
+status='active' and user_id courant
+end note
+APP --> UUI : Reservation annulee
+
+Administrateur -> AUI : Cloturer une reservation
+AUI -> APP : POST /reservations/{id}/close
+APP -> DB : UPDATE reservations status='closed'
+APP --> AUI : Reservation cloturee
 @enduml

@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Ouvrages (admin)</h2>
+<section class="stats-grid">
+    <article class="card stat"><h3>Titres au catalogue</h3><p>{{ books_summary.total_titles }}</p></article>
+    <article class="card stat"><h3>Total des livres</h3><p>{{ books_summary.total_books }}</p></article>
+    <article class="card stat"><h3>Exemplaires disponibles</h3><p>{{ books_summary.available_books }}</p></article>
+</section>
+
 <section class="card">
     <h3>Ajouter un ouvrage</h3>
     <form method="post" class="grid-form">
@@ -21,6 +27,9 @@
         </label>
         <label>Nombre d'exemplaires
             <input name="total_copies" type="number" min="1" value="1" required>
+        </label>
+        <label>Exemplaires disponibles
+            <input name="available_copies" type="number" min="0" value="1">
         </label>
         <button type="submit">Ajouter</button>
     </form>
@@ -52,7 +61,7 @@
     <h3>Catalogue</h3>
     <table>
         <thead>
-        <tr><th>ID</th><th>Titre</th><th>Auteur</th><th>Annee</th><th>Editeur</th><th>ISBN</th><th>Total</th><th>Disponibles</th></tr>
+        <tr><th>ID</th><th>Titre</th><th>Auteur</th><th>Annee</th><th>Editeur</th><th>ISBN</th><th>Total</th><th>Disponibles</th><th>Action</th></tr>
         </thead>
         <tbody>
         {% for book in books %}
@@ -65,9 +74,15 @@
             <td>{{ book.isbn or '-' }}</td>
             <td>{{ book.total_copies }}</td>
             <td>{{ book.available_copies }}</td>
+            <td>
+                <form method="post" action="{{ url_for('update_book_availability', book_id=book.id) }}" class="inline-form">
+                    <input name="available_copies" type="number" min="0" max="{{ book.total_copies }}" value="{{ book.available_copies }}" required>
+                    <button type="submit">Maj dispo</button>
+                </form>
+            </td>
         </tr>
         {% else %}
-        <tr><td colspan="8">Aucun ouvrage.</td></tr>
+        <tr><td colspan="9">Aucun ouvrage.</td></tr>
         {% endfor %}
         </tbody>
     </table>

@@ -1,43 +1,50 @@
-﻿@startuml
+@startuml
 left to right direction
-actor "Bibliothécaire" as B
-actor "Usager" as U
+actor "Adherent" as U
 actor "Administrateur" as A
 
-rectangle "Système de gestion de bibliothèque" {
-  usecase "S'authentifier" as UC1
-  usecase "Rechercher un ouvrage" as UC2
-  usecase "Consulter disponibilité" as UC3
-  usecase "Emprunter un ouvrage" as UC4
-  usecase "Retourner un ouvrage" as UC5
-  usecase "Réserver un ouvrage" as UC6
-  usecase "Annuler réservation" as UC7
-  usecase "Gérer usagers" as UC8
-  usecase "Gérer ouvrages" as UC9
-  usecase "Calculer pénalité retard" as UC10
-  usecase "Consulter historique" as UC11
+rectangle "Systeme de gestion de bibliotheque" {
+  usecase "S'inscrire" as UC1
+  usecase "Se connecter" as UC2
+  usecase "Se deconnecter" as UC3
+  usecase "Consulter le catalogue" as UC4
+  usecase "Filtrer les ouvrages" as UC5
+  usecase "Demander un emprunt" as UC6
+  usecase "Reserver un ouvrage" as UC7
+  usecase "Annuler sa reservation" as UC8
+  usecase "Consulter son tableau de bord" as UC9
+
+  usecase "Gerer ouvrages" as UC10
+  usecase "Gerer utilisateurs" as UC11
+  usecase "Traiter demandes d'emprunt" as UC12
+  usecase "Approuver demande" as UC13
+  usecase "Rejeter demande" as UC14
+  usecase "Enregistrer un retour" as UC15
+  usecase "Consulter reservations" as UC16
+  usecase "Cloturer reservation" as UC17
+  usecase "Consulter tableau de bord admin" as UC18
 }
 
 U --> UC1
 U --> UC2
 U --> UC3
+U --> UC4
 U --> UC6
 U --> UC7
-U --> UC11
+U --> UC8
+U --> UC9
 
-B --> UC1
-B --> UC4
-B --> UC5
-B --> UC2
-B --> UC3
-B --> UC10
-B --> UC11
+A --> UC2
+A --> UC3
+A --> UC10
+A --> UC11
+A --> UC12
+A --> UC15
+A --> UC16
+A --> UC17
+A --> UC18
 
-A --> UC1
-A --> UC8
-A --> UC9
-
-UC4 .> UC3 : <<include>>
-UC5 .> UC10 : <<include>>
-UC6 .> UC3 : <<include>>
+UC5 .> UC4 : <<extend>>
+UC12 .> UC13 : <<include>>
+UC12 .> UC14 : <<include>>
 @enduml
