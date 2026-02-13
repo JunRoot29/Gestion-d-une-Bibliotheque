@@ -1,0 +1,31 @@
+@startuml
+actor Administrateur
+participant "Interface Admin" as UI
+participant "Application Flask" as APP
+database BaseDeDonnées as DB
+
+== Suspension manuelle ==
+Administrateur -> UI : Suspendre un usager
+UI -> APP : POST /utilisateurs/{id}/suspendre (raison)
+APP -> DB : Sélectionner utilisateur par identifiant (rôle='adhérent')
+
+alt [Compte introuvable]
+  APP --> UI : Erreur (utilisateur non trouvé)
+else [Compte valide]
+  APP -> DB : UPDATE utilisateurs SET est_suspendu=1, origine='manuelle', raison, date_suspension=aujourd'hui
+  APP --> UI : Usager suspendu
+end
+
+== Levée de suspension ==
+Administrateur -> UI : Lever la suspension
+UI -> APP : POST /utilisateurs/{id}/lever-suspension
+APP -> DB : UPDATE utilisateurs SET est_suspendu=0, raison=NULL, origine=NULL, date_suspension=NULL
+APP --> UI : Suspension levée
+
+== Suspension automatique ==
+UI -> APP : Accès écran protégé (/emprunts, /utilisateurs, /moi, ...)
+APP -> DB : Synchroniser suspensions
+APP -> DB : Chercher emprunts en retard (date_limite < aujourd'hui ET date_retour IS NULL)
+APP -> DB : UPDATE utilisateurs SET est_suspendu=1, origine='automatique' pour les usagers concernés
+APP -> DB : Lever auto-suspension si plus de retard
+@enduml

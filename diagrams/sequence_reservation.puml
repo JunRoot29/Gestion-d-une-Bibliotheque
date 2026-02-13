@@ -1,27 +1,37 @@
 @startuml
-actor Adherent
+actor Adhérent
 actor Administrateur
-participant "UI Adherent" as UUI
-participant "UI Admin" as AUI
-participant "Flask App" as APP
-database DB
+participant "Interface Adhérent" as UUI
+participant "Interface Admin" as AUI
+participant "Application Flask" as APP
+database BaseDeDonnées as DB
 
-Adherent -> UUI : Reserver un ouvrage
-UUI -> APP : POST /me/reservations (book_id)
-APP -> DB : INSERT reservations(status='active')
-APP --> UUI : Reservation enregistree
+== Réserver un ouvrage ==
+Adhérent -> UUI : Réserver un ouvrage
+UUI -> APP : POST /moi/reservations (id_ouvrage)
+APP -> DB : Synchroniser suspensions
+APP -> DB : Charger utilisateur courant
 
-Adherent -> UUI : Annuler sa reservation
-UUI -> APP : POST /me/reservations/{id}/cancel
-APP -> DB : UPDATE reservations status='closed'
+alt [Usager suspendu]
+  APP --> UUI : Refus (compte suspendu)
+else [Usager actif]
+  APP -> DB : INSERT reservations(statut='active')
+  APP --> UUI : Réservation enregistrée
+end
+
+== Annuler une réservation ==
+Adhérent -> UUI : Annuler sa réservation
+UUI -> APP : POST /moi/reservations/{id}/annuler
+APP -> DB : UPDATE reservations statut='clôturée'
 note right
-Condition SQL:
-status='active' and user_id courant
+Condition SQL :
+statut='active' AND utilisateur_id = courant
 end note
-APP --> UUI : Reservation annulee
+APP --> UUI : Réservation annulée
 
-Administrateur -> AUI : Cloturer une reservation
-AUI -> APP : POST /reservations/{id}/close
-APP -> DB : UPDATE reservations status='closed'
-APP --> AUI : Reservation cloturee
+== Clôturer une réservation ==
+Administrateur -> AUI : Clôturer une réservation
+AUI -> APP : POST /reservations/{id}/clôturer
+APP -> DB : UPDATE reservations statut='clôturée'
+APP --> AUI : Réservation clôturée
 @enduml

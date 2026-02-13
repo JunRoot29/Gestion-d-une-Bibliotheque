@@ -1,17 +1,21 @@
 @startuml
 actor Administrateur
-participant "UI Admin" as UI
-participant "Flask App" as APP
-database DB
+participant "Interface Admin" as UI
+participant "Application Flask" as APP
+database BaseDeDonnées as DB
 
+== Retour d'un emprunt ==
 Administrateur -> UI : Enregistrer le retour d'un emprunt
-UI -> APP : POST /loans (action=return, loan_id)
-APP -> DB : SELECT loan by id
-alt Emprunt introuvable ou deja retourne
-  APP --> UI : Message d'erreur
-else Emprunt actif
-  APP -> DB : UPDATE loans SET return_date = date('now')
-  APP -> DB : UPDATE books SET available_copies = available_copies + 1
-  APP --> UI : Retour enregistre
+UI -> APP : POST /emprunts (action=retour, id_emprunt)
+APP -> DB : Synchroniser suspensions
+APP -> DB : Sélectionner emprunt par identifiant
+
+alt [Emprunt introuvable ou déjà retourné]
+  APP --> UI : Erreur (emprunt non valide)
+else [Emprunt actif]
+  APP -> DB : UPDATE emprunts SET date_retour = aujourd'hui
+  APP -> DB : UPDATE ouvrages SET exemplaires_disponibles = exemplaires_disponibles + 1
+  APP -> DB : Synchroniser suspensions
+  APP --> UI : Retour enregistré
 end
 @enduml

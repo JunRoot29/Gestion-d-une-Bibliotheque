@@ -1,66 +1,76 @@
 @startuml
-class User {
+class Utilisateur {
   +id: int
-  +full_name: str
+  +nom_complet: str
   +email: str
-  +phone: str
-  +user_type: str
-  +role: Role
-  +password_hash: str
+  +telephone: str
+  +type_utilisateur: str
+  +role: Rôle
+  +mot_de_passe_hash: str
+  +est_suspendu: bool
+  +raison_suspension: str
+  +origine_suspension: OrigineSuspension
+  +date_suspension: date
 }
 
-enum Role {
-  admin
-  user
+enum Rôle {
+  administrateur
+  adhérent
 }
 
-class Book {
+enum OrigineSuspension {
+  automatique
+  manuelle
+}
+
+class Livre {
   +id: int
-  +title: str
-  +author: str
+  +titre: str
+  +auteur: str
   +isbn: str
-  +publisher: str
-  +publication_year: int
-  +total_copies: int
-  +available_copies: int
+  +editeur: str
+  +annee_publication: int
+  +nombre_exemplaires: int
+  +exemplaires_disponibles: int
 }
 
-class LoanRequest {
+class DemandeEmprunt {
   +id: int
-  +request_date: date
-  +status: LoanRequestStatus
+  +date_demande: date
+  +statut: StatutDemandeEmprunt
 }
 
-enum LoanRequestStatus {
-  pending
-  approved
-  rejected
+enum StatutDemandeEmprunt {
+  en_attente
+  approuvée
+  rejetée
 }
 
-class Loan {
+class Emprunt {
   +id: int
-  +loan_date: date
-  +due_date: date
-  +return_date: date
+  +date_emprunt: date
+  +date_limite: date
+  +date_retour: date
 }
 
-class Reservation {
+class Réservation {
   +id: int
-  +reservation_date: date
-  +status: ReservationStatus
+  +date_reservation: date
+  +statut: StatutRéservation
 }
 
-enum ReservationStatus {
+enum StatutRéservation {
   active
-  closed
+  clôturée
 }
 
-User "1" -- "0..*" LoanRequest
-Book "1" -- "0..*" LoanRequest
-User "1" -- "0..*" Loan
-Book "1" -- "0..*" Loan
-User "1" -- "0..*" Reservation
-Book "1" -- "0..*" Reservation
+Utilisateur "1" -- "0..*" DemandeEmprunt
+Livre "1" -- "0..*" DemandeEmprunt
+Utilisateur "1" -- "0..*" Emprunt
+Livre "1" -- "0..*" Emprunt
+Utilisateur "1" -- "0..*" Réservation
+Livre "1" -- "0..*" Réservation
 
-LoanRequest ..> Loan : approved -> create loan
+DemandeEmprunt ..> Emprunt : approuvée -> créer emprunt
+Emprunt ..> Utilisateur : en retard -> suspension automatique
 @enduml
