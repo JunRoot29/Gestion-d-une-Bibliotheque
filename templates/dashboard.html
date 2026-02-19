@@ -46,6 +46,22 @@
     </article>
 </section>
 
+<section class="card reveal-up">
+    <h3>Securite du compte administrateur</h3>
+    <form method="post" action="{{ url_for('change_own_password') }}" class="grid-form">
+        <label>Mot de passe actuel
+            <input type="password" name="current_password" required>
+        </label>
+        <label>Nouveau mot de passe
+            <input type="password" name="new_password" minlength="6" required>
+        </label>
+        <label>Confirmer le nouveau mot de passe
+            <input type="password" name="confirm_password" minlength="6" required>
+        </label>
+        <button type="submit">Mettre a jour</button>
+    </form>
+</section>
+
 <section class="dashboard-grid">
     <article class="card chart-card reveal-up">
         <h3>Etat du stock</h3>

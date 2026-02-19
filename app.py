@@ -20,6 +20,8 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-key-change-me")
 def get_db_connection() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = MEMORY")
+    conn.execute("PRAGMA synchronous = NORMAL")
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
@@ -362,6 +364,43 @@ def logout():
     session.clear()
     flash("Session fermee.", "success")
     return redirect(url_for("login"))
+
+
+@app.post("/me/password")
+@login_required
+def change_own_password():
+    user = get_current_user()
+    if user is None:
+        return redirect(url_for("login"))
+
+    current_password = request.form.get("current_password", "")
+    new_password = request.form.get("new_password", "")
+    confirm_password = request.form.get("confirm_password", "")
+
+    if not current_password or not new_password or not confirm_password:
+        flash("Tous les champs mot de passe sont obligatoires.", "error")
+        return redirect(request.referrer or url_for("catalog"))
+
+    if len(new_password) < 6:
+        flash("Le nouveau mot de passe doit contenir au moins 6 caracteres.", "error")
+        return redirect(request.referrer or url_for("catalog"))
+
+    if new_password != confirm_password:
+        flash("La confirmation du nouveau mot de passe est invalide.", "error")
+        return redirect(request.referrer or url_for("catalog"))
+
+    if not user["password_hash"] or not check_password_hash(user["password_hash"], current_password):
+        flash("Mot de passe actuel incorrect.", "error")
+        return redirect(request.referrer or url_for("catalog"))
+
+    with get_db_connection() as conn:
+        conn.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (generate_password_hash(new_password), user["id"]),
+        )
+
+    flash("Mot de passe mis a jour.", "success")
+    return redirect(request.referrer or url_for("catalog"))
 
 
 @app.route("/admin")
@@ -1237,6 +1276,33 @@ def unsuspend_user(user_id: int):
             (user_id,),
         )
     flash("Suspension levee.", "success")
+    return redirect(url_for("users"))
+
+
+@app.post("/users/<int:user_id>/password")
+@admin_required
+def reset_user_password(user_id: int):
+    new_password = request.form.get("new_password", "")
+
+    if len(new_password) < 6:
+        flash("Le nouveau mot de passe doit contenir au moins 6 caracteres.", "error")
+        return redirect(url_for("users"))
+
+    with get_db_connection() as conn:
+        user = conn.execute(
+            "SELECT id, role FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+        if user is None or user["role"] != "user":
+            flash("Compte usager introuvable.", "error")
+            return redirect(url_for("users"))
+
+        conn.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (generate_password_hash(new_password), user_id),
+        )
+
+    flash("Mot de passe usager reinitialise.", "success")
     return redirect(url_for("users"))
 
 

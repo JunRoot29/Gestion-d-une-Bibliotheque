@@ -96,6 +96,22 @@
 </section>
 
 <section class="card">
+    <h3>Securite de mon compte</h3>
+    <form method="post" action="{{ url_for('change_own_password') }}" class="grid-form">
+        <label>Mot de passe actuel
+            <input type="password" name="current_password" required>
+        </label>
+        <label>Nouveau mot de passe
+            <input type="password" name="new_password" minlength="6" required>
+        </label>
+        <label>Confirmer le nouveau mot de passe
+            <input type="password" name="confirm_password" minlength="6" required>
+        </label>
+        <button type="submit">Changer mon mot de passe</button>
+    </form>
+</section>
+
+<section class="card">
     <h3>Suggestions disponibles</h3>
     <table>
         <thead><tr><th>Titre</th><th>Auteur</th><th>Annee</th><th>Disponibles</th><th>Action</th></tr></thead>

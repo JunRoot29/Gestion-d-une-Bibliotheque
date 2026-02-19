@@ -81,7 +81,7 @@
     <h3>Registre des comptes</h3>
     <table>
         <thead>
-        <tr><th>ID</th><th>Nom</th><th>Email</th><th>Telephone</th><th>Type</th><th>Role</th><th>Etat</th><th>Action</th></tr>
+        <tr><th>ID</th><th>Nom</th><th>Email</th><th>Telephone</th><th>Type</th><th>Role</th><th>Etat</th><th>Action</th><th>Mot de passe</th></tr>
         </thead>
         <tbody>
         {% for user in users %}
@@ -113,9 +113,19 @@
                 <span class="status-chip">-</span>
                 {% endif %}
             </td>
+            <td>
+                {% if user.role == 'user' %}
+                <form method="post" action="{{ url_for('reset_user_password', user_id=user.id) }}" class="inline-form stock-form">
+                    <input type="password" name="new_password" minlength="6" placeholder="Nouveau mot de passe" required>
+                    <button type="submit">Reinitialiser</button>
+                </form>
+                {% else %}
+                <span class="status-chip">-</span>
+                {% endif %}
+            </td>
         </tr>
         {% else %}
-        <tr><td colspan="8">Aucun compte.</td></tr>
+        <tr><td colspan="9">Aucun compte.</td></tr>
         {% endfor %}
         </tbody>
     </table>
