@@ -1,31 +1,39 @@
 @startuml
-actor Administrateur
+actor "Administrateur" as A
 participant "Interface Admin" as UI
 participant "Application Flask" as APP
-database BaseDeDonnées as DB
+database "SQLite" as DB
 
 == Suspension manuelle ==
-Administrateur -> UI : Suspendre un usager
-UI -> APP : POST /utilisateurs/{id}/suspendre (raison)
-APP -> DB : Sélectionner utilisateur par identifiant (rôle='adhérent')
+A -> UI : Suspendre un usager
+UI -> APP : POST /users/{id}/suspend (reason)
+APP -> DB : Charger utilisateur role='user'
 
-alt [Compte introuvable]
-  APP --> UI : Erreur (utilisateur non trouvé)
-else [Compte valide]
-  APP -> DB : UPDATE utilisateurs SET est_suspendu=1, origine='manuelle', raison, date_suspension=aujourd'hui
+alt Compte introuvable
+  APP --> UI : Erreur (usager introuvable)
+else Compte valide
+  APP -> DB : UPDATE users SET
+  APP -> DB : is_suspended=1, suspension_origin='manual',
+  APP -> DB : suspension_reason, suspension_date=date('now')
   APP --> UI : Usager suspendu
 end
 
-== Levée de suspension ==
-Administrateur -> UI : Lever la suspension
-UI -> APP : POST /utilisateurs/{id}/lever-suspension
-APP -> DB : UPDATE utilisateurs SET est_suspendu=0, raison=NULL, origine=NULL, date_suspension=NULL
-APP --> UI : Suspension levée
+== Levee de suspension ==
+A -> UI : Lever une suspension
+UI -> APP : POST /users/{id}/unsuspend
+APP -> DB : UPDATE users SET is_suspended=0,
+suspension_reason=NULL, suspension_origin=NULL, suspension_date=NULL
+APP --> UI : Suspension levee
 
-== Suspension automatique ==
-UI -> APP : Accès écran protégé (/emprunts, /utilisateurs, /moi, ...)
-APP -> DB : Synchroniser suspensions
-APP -> DB : Chercher emprunts en retard (date_limite < aujourd'hui ET date_retour IS NULL)
-APP -> DB : UPDATE utilisateurs SET est_suspendu=1, origine='automatique' pour les usagers concernés
-APP -> DB : Lever auto-suspension si plus de retard
+== Synchronisation automatique ==
+UI -> APP : Acces ecran protege (/admin, /users, /loans, /me...)
+APP -> DB : sync_user_suspensions()
+APP -> DB : Chercher emprunts en retard
+note right
+Condition retard:
+return_date IS NULL
+AND due_date < date('now')
+end note
+APP -> DB : Suspendre auto les usagers en retard
+APP -> DB : Lever auto-suspension si plus aucun retard
 @enduml

@@ -1,76 +1,95 @@
 @startuml
 class Utilisateur {
   +id: int
-  +nom_complet: str
+  +full_name: str
   +email: str
-  +telephone: str
-  +type_utilisateur: str
-  +role: Rôle
-  +mot_de_passe_hash: str
-  +est_suspendu: bool
-  +raison_suspension: str
-  +origine_suspension: OrigineSuspension
-  +date_suspension: date
+  +phone: str
+  +user_type: TypeUsager
+  +role: RoleApplicatif
+  +password_hash: str
+  +is_suspended: bool
+  +suspension_reason: str
+  +suspension_origin: OrigineSuspension
+  +suspension_date: date
+  +changerMotDePasse(): bool
 }
 
-enum Rôle {
+enum RoleApplicatif {
+  admin
+  user
+}
+
+enum TypeUsager {
+  adherent
+  enseignant
   administrateur
-  adhérent
 }
 
 enum OrigineSuspension {
-  automatique
-  manuelle
+  auto
+  manual
 }
 
 class Livre {
   +id: int
-  +titre: str
-  +auteur: str
+  +title: str
+  +author: str
   +isbn: str
-  +editeur: str
-  +annee_publication: int
-  +nombre_exemplaires: int
-  +exemplaires_disponibles: int
+  +publisher: str
+  +publication_year: int
+  +total_copies: int
+  +available_copies: int
 }
 
 class DemandeEmprunt {
   +id: int
-  +date_demande: date
-  +statut: StatutDemandeEmprunt
+  +request_date: date
+  +status: StatutDemande
 }
 
-enum StatutDemandeEmprunt {
-  en_attente
-  approuvée
-  rejetée
+enum StatutDemande {
+  pending
+  approved
+  rejected
 }
 
 class Emprunt {
   +id: int
-  +date_emprunt: date
-  +date_limite: date
-  +date_retour: date
+  +loan_date: date
+  +due_date: date
+  +return_date: date
 }
 
-class Réservation {
+class Reservation {
   +id: int
-  +date_reservation: date
-  +statut: StatutRéservation
+  +reservation_date: date
+  +status: StatutReservation
 }
 
-enum StatutRéservation {
+enum StatutReservation {
   active
-  clôturée
+  closed
+}
+
+class ServiceCompte {
+  +changerMotDePassePersonnel(user_id, current_password, new_password)
+  +reinitialiserMotDePasseUsager(admin_id, user_id, new_password)
+}
+
+class ServiceSuspension {
+  +syncUserSuspensions()
 }
 
 Utilisateur "1" -- "0..*" DemandeEmprunt
 Livre "1" -- "0..*" DemandeEmprunt
 Utilisateur "1" -- "0..*" Emprunt
 Livre "1" -- "0..*" Emprunt
-Utilisateur "1" -- "0..*" Réservation
-Livre "1" -- "0..*" Réservation
+Utilisateur "1" -- "0..*" Reservation
+Livre "1" -- "0..*" Reservation
 
-DemandeEmprunt ..> Emprunt : approuvée -> créer emprunt
-Emprunt ..> Utilisateur : en retard -> suspension automatique
+DemandeEmprunt ..> Emprunt : approved -> creer emprunt
+Emprunt ..> Utilisateur : retard -> suspension auto
+ServiceCompte ..> Utilisateur
+ServiceSuspension ..> Utilisateur
+ServiceSuspension ..> Emprunt
 @enduml

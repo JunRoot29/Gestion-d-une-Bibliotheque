@@ -7,11 +7,15 @@ Fichiers PlantUML inclus :
 - sequence_retour.puml
 - sequence_reservation.puml
 - sequence_suspension.puml
+- sequence_mot_de_passe.puml
 
 Couverture metier actuelle :
+- Catalogue public (consultation sans compte) + filtres de recherche
 - Authentification (inscription/connexion/deconnexion)
-- Catalogue et filtres de recherche
-- Emprunts avec date limite obligatoire
+- Gestion des mots de passe :
+  - changement de mot de passe personnel (usager + admin)
+  - reinitialisation du mot de passe usager par admin
+- Emprunts avec demande prealable, validation admin et date limite
 - Suspensions usager (automatique sur retard + manuelle admin)
 - Reservations (creation, annulation usager, cloture admin)
 - Gestion admin des ouvrages et utilisateurs

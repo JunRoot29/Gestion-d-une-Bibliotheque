@@ -1,54 +1,54 @@
 @startuml
-actor Adhérent
-actor Administrateur
-participant "Interface Adhérent" as UUI
+actor "Usager" as U
+actor "Administrateur" as A
+participant "Interface Catalogue" as UUI
 participant "Interface Admin" as AUI
 participant "Application Flask" as APP
-database BaseDeDonnées as DB
+database "SQLite" as DB
 
-== Demande d'emprunt ==
-Adhérent -> UUI : Choisir un ouvrage
-UUI -> APP : POST /moi/demandes-emprunt (id_ouvrage)
-APP -> DB : Synchroniser suspensions
-APP -> DB : Charger utilisateur courant
+== Demande d'emprunt usager ==
+U -> UUI : Choisir un livre
+UUI -> APP : POST /me/loan-requests (book_id)
+APP -> DB : sync_user_suspensions()
+APP -> DB : Charger user courant
 
-alt [Usager suspendu]
+alt Usager suspendu
   APP --> UUI : Refus (compte suspendu)
-else [Usager actif]
-  APP -> DB : Vérifier demande en attente
-  alt [Demande déjà en attente]
-    APP --> UUI : Erreur (demande déjà en attente)
-  else [Nouvelle demande]
-    APP -> DB : INSERT demandes_emprunt(statut='en_attente')
-    APP --> UUI : Demande envoyée
+else Usager actif
+  APP -> DB : Verifier livre existe
+  APP -> DB : Verifier available_copies > 0
+  APP -> DB : Verifier demande pending deja presente
+  APP -> DB : Verifier emprunt actif deja present
+
+  alt Contrainte invalide
+    APP --> UUI : Refus de creation de demande
+  else Demande valide
+    APP -> DB : INSERT loan_requests(status='pending')
+    APP --> UUI : Demande envoyee
   end
 end
 
-== Validation par administrateur ==
-Administrateur -> AUI : Ouvrir liste des demandes
-AUI -> APP : POST /emprunts (action=approuver, date_limite)
-APP -> DB : Vérifier date_limite >= aujourd'hui
+== Validation admin ==
+A -> AUI : Ouvrir les demandes en attente
+AUI -> APP : POST /loans (action=approve_request, due_date)
+APP -> DB : Verifier due_date >= aujourd'hui
+APP -> DB : sync_user_suspensions()
+APP -> DB : Charger demande pending
+APP -> DB : Verifier user non suspendu
+APP -> DB : Verifier livre disponible
 
-alt [Date limite invalide]
+alt Validation impossible
   APP --> AUI : Refus de validation
-else [Date valide]
-  APP -> DB : Charger demande en attente
-  APP -> DB : Vérifier usager non suspendu
-  APP -> DB : Vérifier exemplaires disponibles
-
-  alt [Demande invalide / usager suspendu / stock insuffisant]
-    APP --> AUI : Refus de validation
-  else [Approbation possible]
-    APP -> DB : UPDATE demandes_emprunt statut='approuvée'
-    APP -> DB : INSERT emprunts(utilisateur_id, ouvrage_id, date_limite)
-    APP -> DB : UPDATE ouvrages exemplaires_disponibles = exemplaires_disponibles - 1
-    APP --> AUI : Emprunt créé
-  end
+else Validation OK
+  APP -> DB : UPDATE loan_requests status='approved'
+  APP -> DB : INSERT loans(user_id, book_id, due_date)
+  APP -> DB : UPDATE books available_copies = available_copies - 1
+  APP --> AUI : Emprunt cree
 end
 
-== Rejet d'une demande ==
-Administrateur -> AUI : Rejeter une demande
-AUI -> APP : POST /emprunts (action=rejeter)
-APP -> DB : UPDATE demandes_emprunt statut='rejetée'
-APP --> AUI : Demande rejetée
+== Rejet admin ==
+A -> AUI : Rejeter une demande
+AUI -> APP : POST /loans (action=reject_request)
+APP -> DB : UPDATE loan_requests status='rejected'
+APP --> AUI : Demande rejetee
 @enduml

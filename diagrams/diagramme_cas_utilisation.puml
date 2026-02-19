@@ -1,70 +1,88 @@
 @startuml
 left to right direction
-actor "Adherent" as U
+actor "Visiteur" as V
+actor "Usager" as U
 actor "Administrateur" as A
 
 rectangle "Systeme de gestion de bibliotheque" {
-  usecase "S'inscrire" as UC1
-  usecase "Se connecter" as UC2
-  usecase "Se deconnecter" as UC3
-  usecase "Consulter le catalogue" as UC4
-  usecase "Filtrer les ouvrages" as UC5
-  usecase "Demander un emprunt" as UC6
-  usecase "Reserver un ouvrage" as UC7
-  usecase "Annuler sa reservation" as UC8
-  usecase "Consulter son tableau de bord" as UC9
-  usecase "Voir son statut de suspension" as UC19
+  usecase "Consulter le catalogue" as UC1
+  usecase "Filtrer les ouvrages" as UC2
 
-  usecase "Gerer ouvrages" as UC10
-  usecase "Mettre a jour\nles exemplaires disponibles" as UC20
-  usecase "Gerer utilisateurs" as UC11
-  usecase "Suspendre un usager" as UC21
-  usecase "Lever une suspension" as UC22
-  usecase "Consulter les usagers suspendus" as UC23
-  usecase "Traiter demandes d'emprunt" as UC12
-  usecase "Approuver demande" as UC13
-  usecase "Rejeter demande" as UC14
-  usecase "Verifier date limite" as UC24
-  usecase "Verifier suspension usager" as UC25
-  usecase "Enregistrer un retour" as UC15
-  usecase "Suspendre automatiquement\nsur retard" as UC26
-  usecase "Consulter reservations" as UC16
-  usecase "Cloturer reservation" as UC17
-  usecase "Consulter tableau de bord admin" as UC18
-  usecase "Visualiser indicateurs\net graphes" as UC27
+  usecase "S'inscrire" as UC3
+  usecase "Se connecter" as UC4
+  usecase "Se deconnecter" as UC5
+  usecase "Changer son mot de passe" as UC6
+
+  usecase "Demander un emprunt" as UC7
+  usecase "Reserver un ouvrage" as UC8
+  usecase "Annuler sa reservation" as UC9
+  usecase "Consulter son tableau de bord" as UC10
+  usecase "Voir son statut de suspension" as UC11
+
+  usecase "Gerer ouvrages" as UC12
+  usecase "Mettre a jour les exemplaires disponibles" as UC13
+  usecase "Gerer utilisateurs" as UC14
+  usecase "Suspendre un usager" as UC15
+  usecase "Lever une suspension" as UC16
+  usecase "Reinitialiser le mot de passe d'un usager" as UC17
+
+  usecase "Traiter demandes d'emprunt" as UC18
+  usecase "Approuver demande" as UC19
+  usecase "Rejeter demande" as UC20
+  usecase "Verifier date limite" as UC21
+  usecase "Verifier suspension usager" as UC22
+  usecase "Verifier disponibilite ouvrage" as UC23
+
+  usecase "Enregistrer un retour" as UC24
+  usecase "Synchroniser suspensions automatiques" as UC25
+
+  usecase "Consulter reservations" as UC26
+  usecase "Cloturer reservation" as UC27
+
+  usecase "Consulter tableau de bord admin" as UC28
+  usecase "Visualiser indicateurs et graphes" as UC29
 }
+
+V --> UC1
+V --> UC2
+V --> UC3
+V --> UC4
 
 U --> UC1
 U --> UC2
-U --> UC3
 U --> UC4
+U --> UC5
 U --> UC6
 U --> UC7
 U --> UC8
 U --> UC9
-U --> UC19
+U --> UC10
+U --> UC11
 
-A --> UC2
-A --> UC3
-A --> UC10
-A --> UC20
-A --> UC11
-A --> UC21
-A --> UC22
-A --> UC23
+A --> UC4
+A --> UC5
+A --> UC6
 A --> UC12
+A --> UC13
+A --> UC14
 A --> UC15
 A --> UC16
 A --> UC17
 A --> UC18
+A --> UC24
+A --> UC26
+A --> UC27
+A --> UC28
 
-UC5 .> UC4 : <<extend>>
-UC12 .> UC13 : <<include>>
-UC12 .> UC14 : <<include>>
-UC12 .> UC24 : <<include>>
-UC12 .> UC25 : <<include>>
-UC9 .> UC27 : <<include>>
-UC18 .> UC27 : <<include>>
-UC15 .> UC26 : <<include>>
-UC12 .> UC26 : <<include>>
+UC2 .> UC1 : <<extend>>
+UC18 .> UC19 : <<include>>
+UC18 .> UC20 : <<include>>
+UC18 .> UC21 : <<include>>
+UC18 .> UC22 : <<include>>
+UC18 .> UC23 : <<include>>
+UC24 .> UC25 : <<include>>
+UC18 .> UC25 : <<include>>
+UC9 .> UC25 : <<include>>
+UC10 .> UC29 : <<include>>
+UC28 .> UC29 : <<include>>
 @enduml

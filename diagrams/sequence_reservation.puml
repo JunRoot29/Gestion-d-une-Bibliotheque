@@ -1,37 +1,47 @@
 @startuml
-actor Adhérent
-actor Administrateur
-participant "Interface Adhérent" as UUI
+actor "Usager" as U
+actor "Administrateur" as A
+participant "Interface Usager" as UUI
 participant "Interface Admin" as AUI
 participant "Application Flask" as APP
-database BaseDeDonnées as DB
+database "SQLite" as DB
 
-== Réserver un ouvrage ==
-Adhérent -> UUI : Réserver un ouvrage
-UUI -> APP : POST /moi/reservations (id_ouvrage)
-APP -> DB : Synchroniser suspensions
-APP -> DB : Charger utilisateur courant
+== Creer une reservation ==
+U -> UUI : Cliquer sur "Reserver"
+UUI -> APP : POST /me/reservations (book_id)
+APP -> DB : sync_user_suspensions()
+APP -> DB : Charger user courant
 
-alt [Usager suspendu]
+alt Usager suspendu
   APP --> UUI : Refus (compte suspendu)
-else [Usager actif]
-  APP -> DB : INSERT reservations(statut='active')
-  APP --> UUI : Réservation enregistrée
+else Usager actif
+  APP -> DB : Verifier livre existe
+  APP -> DB : Verifier reservation active deja presente
+  APP -> DB : Verifier emprunt actif deja present
+
+  alt Contrainte invalide
+    APP --> UUI : Refus de reservation
+  else Reservation valide
+    APP -> DB : INSERT reservations(status='active')
+    APP --> UUI : Reservation enregistree
+  end
 end
 
-== Annuler une réservation ==
-Adhérent -> UUI : Annuler sa réservation
-UUI -> APP : POST /moi/reservations/{id}/annuler
-APP -> DB : UPDATE reservations statut='clôturée'
+== Annuler sa reservation ==
+U -> UUI : Annuler une reservation
+UUI -> APP : POST /me/reservations/{id}/cancel
+APP -> DB : UPDATE reservations status='closed'
 note right
-Condition SQL :
-statut='active' AND utilisateur_id = courant
+Condition SQL:
+id = {id}
+AND user_id = courant
+AND status = 'active'
 end note
-APP --> UUI : Réservation annulée
+APP --> UUI : Reservation annulee
 
-== Clôturer une réservation ==
-Administrateur -> AUI : Clôturer une réservation
-AUI -> APP : POST /reservations/{id}/clôturer
-APP -> DB : UPDATE reservations statut='clôturée'
-APP --> AUI : Réservation clôturée
+== Cloturer cote admin ==
+A -> AUI : Cloturer une reservation
+AUI -> APP : POST /reservations/{id}/close
+APP -> DB : UPDATE reservations status='closed'
+APP --> AUI : Reservation cloturee
 @enduml

@@ -1,0 +1,36 @@
+@startuml
+actor "Utilisateur connecte" as U
+actor "Administrateur" as A
+participant "Interface Web" as UI
+participant "Application Flask" as APP
+database "SQLite" as DB
+
+== Changer son propre mot de passe ==
+U -> UI : Saisir mot de passe actuel + nouveau
+UI -> APP : POST /me/password
+APP -> DB : Charger utilisateur courant
+APP -> APP : Verifier champs obligatoires
+APP -> APP : Verifier new_password >= 6
+APP -> APP : Verifier confirmation == nouveau
+APP -> APP : Verifier current_password via hash
+
+alt Validation echoue
+  APP --> UI : Erreur (mot de passe non modifie)
+else Validation OK
+  APP -> DB : UPDATE users SET password_hash=generate_password_hash(new_password)
+  APP --> UI : Mot de passe mis a jour
+end
+
+== Reinitialiser mot de passe usager (admin) ==
+A -> UI : Saisir nouveau mot de passe pour un usager
+UI -> APP : POST /users/{id}/password
+APP -> APP : Verifier nouveau mot de passe >= 6
+APP -> DB : Charger compte cible role='user'
+
+alt Usager introuvable ou role invalide
+  APP --> UI : Erreur (reinitialisation impossible)
+else Cible valide
+  APP -> DB : UPDATE users SET password_hash=generate_password_hash(new_password)
+  APP --> UI : Mot de passe usager reinitialise
+end
+@enduml
