@@ -1,7 +1,22 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Reservations (admin)</h2>
-<section class="card">
+{% set ns = namespace(active=0, closed=0) %}
+{% for reservation in reservations %}
+    {% if reservation.status == 'active' %}{% set ns.active = ns.active + 1 %}{% else %}{% set ns.closed = ns.closed + 1 %}{% endif %}
+{% endfor %}
+
+<section class="card hero-card page-head reveal-up">
+    <h2>Gestion des reservations</h2>
+    <p class="muted">Suivez les reservations en cours et cloturez celles deja traitees.</p>
+</section>
+
+<section class="stats-grid">
+    <article class="card stat reveal-up"><h3>Total reservations</h3><p>{{ reservations|length }}</p></article>
+    <article class="card stat reveal-up"><h3>Actives</h3><p>{{ ns.active }}</p></article>
+    <article class="card stat reveal-up"><h3>Cloturees</h3><p>{{ ns.closed }}</p></article>
+</section>
+
+<section class="card reveal-up">
     <h3>Liste des reservations</h3>
     <table>
         <thead>
@@ -14,14 +29,20 @@
             <td>{{ reservation.user_name }}</td>
             <td>{{ reservation.book_title }}</td>
             <td>{{ reservation.reservation_date }}</td>
-            <td>{{ reservation.status }}</td>
+            <td>
+                {% if reservation.status == 'active' %}
+                <span class="status-chip status-ok">active</span>
+                {% else %}
+                <span class="status-chip">cloturee</span>
+                {% endif %}
+            </td>
             <td>
                 {% if reservation.status == 'active' %}
                 <form method="post" action="{{ url_for('close_reservation', reservation_id=reservation.id) }}">
                     <button type="submit">Cloturer</button>
                 </form>
                 {% else %}
-                -
+                <span class="status-chip">-</span>
                 {% endif %}
             </td>
         </tr>

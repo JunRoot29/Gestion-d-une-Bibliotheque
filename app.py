@@ -3,6 +3,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import date
 from functools import wraps
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -13,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "library.db"
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "dev-key-change-me"
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-key-change-me")
 
 
 def get_db_connection() -> sqlite3.Connection:
@@ -218,12 +219,17 @@ def get_current_user() -> Optional[sqlite3.Row]:
         return conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
 
 
+def can_request_actions(user: Optional[sqlite3.Row]) -> bool:
+    return bool(user and user["role"] == "user" and not user["is_suspended"])
+
+
 def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
         if not session.get("user_id"):
-            flash("Veuillez vous connecter.", "error")
-            return redirect(url_for("login"))
+            flash("Veuillez vous connecter pour continuer.", "error")
+            next_target = request.path if request.method == "GET" else url_for("catalog")
+            return redirect(url_for("login", next=next_target))
         return view(*args, **kwargs)
 
     return wrapped
@@ -244,21 +250,15 @@ def admin_required(view):
 
 @app.context_processor
 def inject_user():
-    return {"session_user": get_current_user()}
+    return {"session_user": get_current_user(), "current_year": date.today().year}
 
 
 @app.route("/")
 def home():
-    user = get_current_user()
-    if user is None:
-        return redirect(url_for("login"))
-    if user["role"] == "admin":
-        return redirect(url_for("admin_dashboard"))
-    return redirect(url_for("user_dashboard"))
+    return redirect(url_for("catalog"))
 
 
 @app.route("/catalog")
-@login_required
 def catalog():
     filters = {
         "title": request.args.get("title", "").strip(),
@@ -267,10 +267,26 @@ def catalog():
         "publisher": request.args.get("publisher", "").strip(),
         "publication_year": request.args.get("publication_year", "").strip(),
     }
+    session_user = get_current_user()
     with get_db_connection() as conn:
         filtered_books = search_books(conn, **filters)
+        totals = conn.execute(
+            """
+            SELECT
+                COUNT(*) AS total_titles,
+                COALESCE(SUM(total_copies), 0) AS total_copies,
+                COALESCE(SUM(available_copies), 0) AS available_copies
+            FROM books
+            """
+        ).fetchone()
 
-    return render_template("catalog.html", books=filtered_books, filters=filters)
+    return render_template(
+        "catalog.html",
+        books=filtered_books,
+        filters=filters,
+        totals=totals,
+        can_borrow=can_request_actions(session_user),
+    )
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -330,6 +346,9 @@ def login():
             return redirect(url_for("login"))
 
         session["user_id"] = user["id"]
+        next_url = request.args.get("next", "").strip()
+        if next_url.startswith("/") and not next_url.startswith("//"):
+            return redirect(next_url)
         if user["role"] == "admin":
             return redirect(url_for("admin_dashboard"))
         return redirect(url_for("user_dashboard"))
@@ -691,6 +710,18 @@ def create_loan_request():
         return redirect(url_for("catalog"))
 
     with get_db_connection() as conn:
+        book = conn.execute(
+            "SELECT id, title, available_copies FROM books WHERE id = ?",
+            (book_id,),
+        ).fetchone()
+        if book is None:
+            flash("Ouvrage introuvable.", "error")
+            return redirect(url_for("catalog"))
+
+        if book["available_copies"] < 1:
+            flash("Aucun exemplaire disponible. Faites plutot une reservation.", "error")
+            return redirect(url_for("catalog"))
+
         existing = conn.execute(
             """
             SELECT id FROM loan_requests
@@ -700,6 +731,17 @@ def create_loan_request():
         ).fetchone()
         if existing:
             flash("Vous avez deja une demande en attente pour cet ouvrage.", "error")
+            return redirect(url_for("catalog"))
+
+        active_loan = conn.execute(
+            """
+            SELECT id FROM loans
+            WHERE user_id = ? AND book_id = ? AND return_date IS NULL
+            """,
+            (user["id"], book_id),
+        ).fetchone()
+        if active_loan:
+            flash("Vous avez deja cet ouvrage en emprunt actif.", "error")
             return redirect(url_for("catalog"))
 
         conn.execute(
@@ -727,6 +769,36 @@ def create_reservation():
         return redirect(url_for("catalog"))
 
     with get_db_connection() as conn:
+        book = conn.execute(
+            "SELECT id, title FROM books WHERE id = ?",
+            (book_id,),
+        ).fetchone()
+        if book is None:
+            flash("Ouvrage introuvable.", "error")
+            return redirect(url_for("catalog"))
+
+        existing_active = conn.execute(
+            """
+            SELECT id FROM reservations
+            WHERE user_id = ? AND book_id = ? AND status = 'active'
+            """,
+            (user["id"], book_id),
+        ).fetchone()
+        if existing_active:
+            flash("Vous avez deja une reservation active pour cet ouvrage.", "error")
+            return redirect(url_for("catalog"))
+
+        active_loan = conn.execute(
+            """
+            SELECT id FROM loans
+            WHERE user_id = ? AND book_id = ? AND return_date IS NULL
+            """,
+            (user["id"], book_id),
+        ).fetchone()
+        if active_loan:
+            flash("Vous avez deja cet ouvrage en emprunt actif.", "error")
+            return redirect(url_for("catalog"))
+
         conn.execute(
             "INSERT INTO reservations(user_id, book_id) VALUES (?, ?)",
             (user["id"], book_id),

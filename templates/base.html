@@ -13,24 +13,23 @@
 <header class="topbar">
     <div class="brand-block">
         <a class="brand" href="{{ url_for('home') }}">BiblioFlow</a>
-        <p>Gestion intelligente de bibliotheque</p>
+        <p>Gestion intelligente de bibliotheque universitaire</p>
     </div>
 
-    {% if session_user %}
     <nav class="main-nav">
-        {% if session_user.role == 'admin' %}
-        <a href="{{ url_for('admin_dashboard') }}">Dashboard admin</a>
         <a href="{{ url_for('catalog') }}">Catalogue</a>
+        {% if session_user and session_user.role == 'admin' %}
+        <a href="{{ url_for('admin_dashboard') }}">Dashboard admin</a>
         <a href="{{ url_for('books') }}">Ouvrages</a>
         <a href="{{ url_for('users') }}">Comptes</a>
         <a href="{{ url_for('loans') }}">Emprunts</a>
         <a href="{{ url_for('reservations') }}">Reservations</a>
-        {% else %}
+        {% elif session_user %}
         <a href="{{ url_for('user_dashboard') }}">Mon dashboard</a>
-        <a href="{{ url_for('catalog') }}">Catalogue</a>
         {% endif %}
     </nav>
 
+    {% if session_user %}
     <div class="session-box">
         <span>
             {{ session_user.full_name }} <small>({{ session_user.role }})</small>
@@ -41,6 +40,11 @@
         <form method="post" action="{{ url_for('logout') }}">
             <button type="submit">Deconnexion</button>
         </form>
+    </div>
+    {% else %}
+    <div class="session-box guest-box">
+        <a class="btn-ghost" href="{{ url_for('login') }}">Connexion</a>
+        <a class="btn-ghost" href="{{ url_for('register') }}">Inscription</a>
     </div>
     {% endif %}
 </header>
@@ -59,9 +63,9 @@
 
 <footer class="site-footer">
     <div class="site-footer-inner">
-        <p>Bibliotheque - Plateforme de gestion des ouvrages et des usagers.<br></p>
-        <p>TP - Génie Logiciel, Modélisation d’un Système de Gestion de Bibliothèque</p>
-        <p>&copy; {{ 2026 }} BiblioFlow</p>
+        <p>Bibliotheque - Plateforme de gestion des ouvrages et des usagers.</p>
+        <p>TP Genie Logiciel - Modelisation d'un Systeme de Gestion de Bibliotheque</p>
+        <p>&copy; {{ current_year }} BiblioFlow</p>
     </div>
 </footer>
 {% block scripts %}{% endblock %}

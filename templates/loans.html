@@ -1,8 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Gestion des emprunts (admin)</h2>
+<section class="card hero-card page-head reveal-up">
+    <h2>Pilotage des emprunts</h2>
+    <p class="muted">Traitez les demandes, suivez les retours et gardez le cycle de pret sous controle.</p>
+</section>
 
-<section class="card">
+<section class="stats-grid">
+    <article class="card stat reveal-up"><h3>Demandes en attente</h3><p>{{ pending_requests|length }}</p></article>
+    <article class="card stat reveal-up"><h3>Emprunts actifs</h3><p>{{ active_loans|length }}</p></article>
+    <article class="card stat reveal-up"><h3>Historique charge</h3><p>{{ loan_history|length }}</p></article>
+</section>
+
+<section class="card reveal-up">
     <h3>Demandes d'emprunt en attente</h3>
     <table>
         <thead>
@@ -15,7 +24,11 @@
             <td>{{ req.user_name }}</td>
             <td>{{ req.book_title }}</td>
             <td>{{ req.request_date }}</td>
-            <td>{{ req.available_copies }}</td>
+            <td>
+                <span class="status-chip {% if req.available_copies > 0 %}status-ok{% else %}status-danger{% endif %}">
+                    {{ req.available_copies }} dispo
+                </span>
+            </td>
             <td>
                 {% if req.user_suspended %}
                 <span class="status-chip status-danger">suspendu</span>
@@ -24,11 +37,11 @@
                 {% endif %}
             </td>
             <td class="actions-cell">
-                <form method="post" class="inline-form">
+                <form method="post" class="inline-form stock-form">
                     <input type="hidden" name="action" value="approve_request">
                     <input type="hidden" name="request_id" value="{{ req.id }}">
                     <input type="date" name="due_date" title="Date limite" required>
-                    <button type="submit" {% if req.user_suspended %}disabled{% endif %}>Approuver</button>
+                    <button type="submit" {% if req.user_suspended or req.available_copies < 1 %}disabled{% endif %}>Approuver</button>
                 </form>
                 <form method="post" class="inline-form">
                     <input type="hidden" name="action" value="reject_request">
@@ -44,7 +57,7 @@
     </table>
 </section>
 
-<section class="card">
+<section class="card reveal-up">
     <h3>Emprunts actifs</h3>
     <table>
         <thead>
@@ -68,7 +81,7 @@
                 {% endif %}
             </td>
             <td>
-                <form method="post">
+                <form method="post" class="inline-form">
                     <input type="hidden" name="action" value="return">
                     <input type="hidden" name="loan_id" value="{{ loan.id }}">
                     <button type="submit">Cloturer retour</button>
@@ -82,7 +95,7 @@
     </table>
 </section>
 
-<section class="card">
+<section class="card reveal-up">
     <h3>Historique des emprunts</h3>
     <table>
         <thead>

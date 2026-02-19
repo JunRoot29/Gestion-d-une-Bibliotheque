@@ -1,68 +1,84 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Comptes (admin)</h2>
-<section class="card">
-    <h3>Usagers suspendus</h3>
-    <table>
-        <thead>
-        <tr><th>ID</th><th>Nom</th><th>Email</th><th>Origine</th><th>Date</th><th>Raison</th><th>Action</th></tr>
-        </thead>
-        <tbody>
-        {% for user in suspended_users %}
-        <tr>
-            <td>{{ user.id }}</td>
-            <td>{{ user.full_name }}</td>
-            <td>{{ user.email }}</td>
-            <td>{{ user.suspension_origin or '-' }}</td>
-            <td>{{ user.suspension_date or '-' }}</td>
-            <td>{{ user.suspension_reason or '-' }}</td>
-            <td>
-                <form method="post" action="{{ url_for('unsuspend_user', user_id=user.id) }}">
-                    <button type="submit">Lever</button>
-                </form>
-            </td>
-        </tr>
-        {% else %}
-        <tr><td colspan="7">Aucun usager suspendu.</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
+{% set ns = namespace(admin_count=0, suspended_count=0) %}
+{% for user in users %}
+    {% if user.role == 'admin' %}{% set ns.admin_count = ns.admin_count + 1 %}{% endif %}
+    {% if user.role == 'user' and user.is_suspended %}{% set ns.suspended_count = ns.suspended_count + 1 %}{% endif %}
+{% endfor %}
+
+<section class="card hero-card page-head reveal-up">
+    <h2>Gestion des comptes</h2>
+    <p class="muted">Suivez les usagers, creez des comptes et controlez les suspensions de maniere centralisee.</p>
 </section>
 
-<section class="card">
-    <h3>Creer un compte</h3>
-    <form method="post" class="grid-form">
-        <label>Nom complet
-            <input name="full_name" required>
-        </label>
-        <label>Email
-            <input type="email" name="email" required>
-        </label>
-        <label>Telephone
-            <input name="phone">
-        </label>
-        <label>Type usager
-            <select name="user_type">
-                <option value="adherent">Adherent</option>
-                <option value="enseignant">Enseignant</option>
-                <option value="administrateur">Administrateur</option>
-            </select>
-        </label>
-        <label>Role applicatif
-            <select name="role">
-                <option value="user">Usager</option>
-                <option value="admin">Admin</option>
-            </select>
-        </label>
-        <label>Mot de passe initial
-            <input type="password" name="password" minlength="6" required>
-        </label>
-        <button type="submit">Creer</button>
-    </form>
+<section class="stats-grid">
+    <article class="card stat reveal-up"><h3>Comptes total</h3><p>{{ users|length }}</p></article>
+    <article class="card stat reveal-up"><h3>Usagers suspendus</h3><p>{{ ns.suspended_count }}</p></article>
+    <article class="card stat reveal-up"><h3>Administrateurs</h3><p>{{ ns.admin_count }}</p></article>
 </section>
 
-<section class="card">
-    <h3>Liste des comptes</h3>
+<section class="split-grid">
+    <article class="card reveal-up">
+        <h3>Creer un compte</h3>
+        <form method="post" class="grid-form">
+            <label>Nom complet
+                <input name="full_name" required>
+            </label>
+            <label>Email
+                <input type="email" name="email" required>
+            </label>
+            <label>Telephone
+                <input name="phone">
+            </label>
+            <label>Type usager
+                <select name="user_type">
+                    <option value="adherent">Adherent</option>
+                    <option value="enseignant">Enseignant</option>
+                    <option value="administrateur">Administrateur</option>
+                </select>
+            </label>
+            <label>Role applicatif
+                <select name="role">
+                    <option value="user">Usager</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </label>
+            <label>Mot de passe initial
+                <input type="password" name="password" minlength="6" required>
+            </label>
+            <button type="submit">Creer</button>
+        </form>
+    </article>
+
+    <article class="card reveal-up">
+        <h3>Usagers suspendus</h3>
+        <table>
+            <thead>
+            <tr><th>ID</th><th>Nom</th><th>Origine</th><th>Date</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+            {% for user in suspended_users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.full_name }}</td>
+                <td>{{ user.suspension_origin or '-' }}</td>
+                <td>{{ user.suspension_date or '-' }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('unsuspend_user', user_id=user.id) }}">
+                        <button type="submit">Lever</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5">Aucun usager suspendu.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </article>
+</section>
+
+<section class="card reveal-up">
+    <h3>Registre des comptes</h3>
     <table>
         <thead>
         <tr><th>ID</th><th>Nom</th><th>Email</th><th>Telephone</th><th>Type</th><th>Role</th><th>Etat</th><th>Action</th></tr>
@@ -89,12 +105,12 @@
                     <button type="submit">Lever</button>
                 </form>
                 {% elif user.role == 'user' %}
-                <form method="post" action="{{ url_for('suspend_user', user_id=user.id) }}" class="inline-form">
+                <form method="post" action="{{ url_for('suspend_user', user_id=user.id) }}" class="inline-form stock-form">
                     <input type="text" name="reason" placeholder="Raison (optionnel)">
                     <button type="submit" class="danger">Suspendre</button>
                 </form>
                 {% else %}
-                -
+                <span class="status-chip">-</span>
                 {% endif %}
             </td>
         </tr>

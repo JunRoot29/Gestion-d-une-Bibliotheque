@@ -4,22 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="45f55cb3-99b9-4792-a7f5-0c15f90d01e8" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diagrams/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/diagrams/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diagrams/diagramme_cas_utilisation.puml" beforeDir="false" afterPath="$PROJECT_DIR$/diagrams/diagramme_cas_utilisation.puml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diagrams/diagramme_classes.puml" beforeDir="false" afterPath="$PROJECT_DIR$/diagrams/diagramme_classes.puml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diagrams/sequence_emprunt.puml" beforeDir="false" afterPath="$PROJECT_DIR$/diagrams/sequence_emprunt.puml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diagrams/sequence_reservation.puml" beforeDir="false" afterPath="$PROJECT_DIR$/diagrams/sequence_reservation.puml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/diagrams/sequence_retour.puml" beforeDir="false" afterPath="$PROJECT_DIR$/diagrams/sequence_retour.puml" afterDir="false" />
-    </list>
+    <list default="true" id="45f55cb3-99b9-4792-a7f5-0c15f90d01e8" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="699" />
+    <option name="cachedIndexableFilesCount" value="700" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />

@@ -1,37 +1,72 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Dashboard administrateur</h2>
+<section class="card hero-card page-head reveal-up">
+    <h2>Centre de pilotage administrateur</h2>
+    <p class="muted">Supervisez les flux bibliotheque en temps reel: stock, demandes, retards et reservations.</p>
+    <div class="quick-links">
+        <a class="btn-ghost" href="{{ url_for('books') }}">Gerer les ouvrages</a>
+        <a class="btn-ghost" href="{{ url_for('users') }}">Gerer les comptes</a>
+        <a class="btn-ghost" href="{{ url_for('loans') }}">Suivre les emprunts</a>
+        <a class="btn-ghost" href="{{ url_for('reservations') }}">Traiter les reservations</a>
+    </div>
+</section>
+
 <section class="stats-grid">
-    <article class="card stat"><h3>Ouvrages</h3><p>{{ stats.books }}</p></article>
-    <article class="card stat"><h3>Total des livres</h3><p>{{ stats.total_copies }}</p></article>
-    <article class="card stat"><h3>Disponibles</h3><p>{{ stats.available_copies }}</p></article>
-    <article class="card stat"><h3>Usagers</h3><p>{{ stats.users }}</p></article>
-    <article class="card stat"><h3>Emprunts actifs</h3><p>{{ stats.active_loans }}</p></article>
-    <article class="card stat"><h3>Demandes en attente</h3><p>{{ stats.pending_requests }}</p></article>
-    <article class="card stat"><h3>Reservations actives</h3><p>{{ stats.active_reservations }}</p></article>
+    <article class="card stat reveal-up"><h3>Ouvrages</h3><p>{{ stats.books }}</p></article>
+    <article class="card stat reveal-up"><h3>Total livres</h3><p>{{ stats.total_copies }}</p></article>
+    <article class="card stat reveal-up"><h3>Disponibles</h3><p>{{ stats.available_copies }}</p></article>
+    <article class="card stat reveal-up"><h3>Usagers</h3><p>{{ stats.users }}</p></article>
+    <article class="card stat reveal-up"><h3>Emprunts actifs</h3><p>{{ stats.active_loans }}</p></article>
+    <article class="card stat reveal-up"><h3>Demandes en attente</h3><p>{{ stats.pending_requests }}</p></article>
+    <article class="card stat reveal-up"><h3>Reservations actives</h3><p>{{ stats.active_reservations }}</p></article>
+</section>
+
+<section class="split-grid">
+    <article class="card mini-panel reveal-up">
+        <h3>Vision instantanee</h3>
+        <div class="metric-line"><span>Stock en circulation</span><strong>{{ stats.borrowed_copies }}</strong></div>
+        <div class="metric-line"><span>Stock disponible</span><strong>{{ stats.available_copies }}</strong></div>
+        <div class="metric-line"><span>Demandes a traiter</span><strong>{{ stats.pending_requests }}</strong></div>
+        <div class="metric-line"><span>Reservations ouvertes</span><strong>{{ stats.active_reservations }}</strong></div>
+    </article>
+    <article class="card mini-panel reveal-up">
+        <h3>Priorites du jour</h3>
+        {% if stats.pending_requests > 0 %}
+        <div class="alert-row warn-row"><strong>Action:</strong> validez les demandes en attente.</div>
+        {% endif %}
+        {% if stats.active_loans > 0 %}
+        <div class="alert-row"><strong>Suivi:</strong> verifiez les retours et echeances.</div>
+        {% endif %}
+        {% if stats.active_reservations > 0 %}
+        <div class="alert-row"><strong>Reservation:</strong> mettez a jour les statuts de cloture.</div>
+        {% endif %}
+        {% if stats.pending_requests == 0 and stats.active_loans == 0 and stats.active_reservations == 0 %}
+        <p class="muted">Aucune action urgente pour le moment.</p>
+        {% endif %}
+    </article>
 </section>
 
 <section class="dashboard-grid">
-    <article class="card chart-card">
+    <article class="card chart-card reveal-up">
         <h3>Etat du stock</h3>
         <div class="chart-wrap"><canvas id="inventoryChart"></canvas></div>
     </article>
-    <article class="card chart-card">
+    <article class="card chart-card reveal-up">
         <h3>Demandes d'emprunt</h3>
         <div class="chart-wrap"><canvas id="requestStatusChart"></canvas></div>
     </article>
 </section>
 
-<section class="card chart-card">
+<section class="card chart-card reveal-up">
     <h3>Activite des 7 derniers jours</h3>
     <div class="chart-wrap"><canvas id="weeklyActivityChart"></canvas></div>
 </section>
 
-<section class="card">
+<section class="card reveal-up">
     <h3>Derniers emprunts</h3>
     <table>
         <thead>
-            <tr><th>ID</th><th>Ouvrage</th><th>Usager</th><th>Date</th><th>Retour</th></tr>
+            <tr><th>ID</th><th>Ouvrage</th><th>Usager</th><th>Date</th><th>Statut</th></tr>
         </thead>
         <tbody>
             {% for loan in recent_loans %}
@@ -40,7 +75,13 @@
                 <td>{{ loan.book_title }}</td>
                 <td>{{ loan.user_name }}</td>
                 <td>{{ loan.loan_date }}</td>
-                <td>{{ loan.return_date or '-' }}</td>
+                <td>
+                    {% if loan.return_date %}
+                    <span class="status-chip status-ok">retourne</span>
+                    {% else %}
+                    <span class="status-chip">en cours</span>
+                    {% endif %}
+                </td>
             </tr>
             {% else %}
             <tr><td colspan="5">Aucune donnee.</td></tr>

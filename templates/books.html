@@ -1,67 +1,73 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Ouvrages (admin)</h2>
+<section class="card hero-card page-head reveal-up">
+    <h2>Gestion des ouvrages</h2>
+    <p class="muted">Administrez le catalogue, ajustez le stock et gardez une base bibliographique propre.</p>
+</section>
+
 <section class="stats-grid">
-    <article class="card stat"><h3>Titres au catalogue</h3><p>{{ books_summary.total_titles }}</p></article>
-    <article class="card stat"><h3>Total des livres</h3><p>{{ books_summary.total_books }}</p></article>
-    <article class="card stat"><h3>Exemplaires disponibles</h3><p>{{ books_summary.available_books }}</p></article>
+    <article class="card stat reveal-up"><h3>Titres au catalogue</h3><p>{{ books_summary.total_titles }}</p></article>
+    <article class="card stat reveal-up"><h3>Total des livres</h3><p>{{ books_summary.total_books }}</p></article>
+    <article class="card stat reveal-up"><h3>Disponibles</h3><p>{{ books_summary.available_books }}</p></article>
 </section>
 
-<section class="card">
-    <h3>Ajouter un ouvrage</h3>
-    <form method="post" class="grid-form">
-        <label>Titre
-            <input name="title" required>
-        </label>
-        <label>Auteur
-            <input name="author" required>
-        </label>
-        <label>ISBN
-            <input name="isbn">
-        </label>
-        <label>Editeur
-            <input name="publisher">
-        </label>
-        <label>Annee de parution
-            <input name="publication_year" type="number" min="0">
-        </label>
-        <label>Nombre d'exemplaires
-            <input name="total_copies" type="number" min="1" value="1" required>
-        </label>
-        <label>Exemplaires disponibles
-            <input name="available_copies" type="number" min="0" value="1">
-        </label>
-        <button type="submit">Ajouter</button>
-    </form>
+<section class="split-grid">
+    <article class="card reveal-up">
+        <h3>Ajouter un ouvrage</h3>
+        <form method="post" class="grid-form">
+            <label>Titre
+                <input name="title" required>
+            </label>
+            <label>Auteur
+                <input name="author" required>
+            </label>
+            <label>ISBN
+                <input name="isbn">
+            </label>
+            <label>Editeur
+                <input name="publisher">
+            </label>
+            <label>Annee de parution
+                <input name="publication_year" type="number" min="0">
+            </label>
+            <label>Nombre d'exemplaires
+                <input name="total_copies" type="number" min="1" value="1" required>
+            </label>
+            <label>Exemplaires disponibles
+                <input name="available_copies" type="number" min="0" value="1">
+            </label>
+            <button type="submit">Ajouter</button>
+        </form>
+    </article>
+
+    <article class="card reveal-up">
+        <h3>Recherche dans le catalogue</h3>
+        <form method="get" class="grid-form">
+            <label>Titre
+                <input name="title" value="{{ filters.title }}">
+            </label>
+            <label>Auteur
+                <input name="author" value="{{ filters.author }}">
+            </label>
+            <label>ISBN
+                <input name="isbn" value="{{ filters.isbn }}">
+            </label>
+            <label>Editeur
+                <input name="publisher" value="{{ filters.publisher }}">
+            </label>
+            <label>Annee
+                <input name="publication_year" value="{{ filters.publication_year }}">
+            </label>
+            <button type="submit">Rechercher</button>
+        </form>
+    </article>
 </section>
 
-<section class="card">
-    <h3>Recherche dans le catalogue</h3>
-    <form method="get" class="grid-form">
-        <label>Titre
-            <input name="title" value="{{ filters.title }}">
-        </label>
-        <label>Auteur
-            <input name="author" value="{{ filters.author }}">
-        </label>
-        <label>ISBN
-            <input name="isbn" value="{{ filters.isbn }}">
-        </label>
-        <label>Editeur
-            <input name="publisher" value="{{ filters.publisher }}">
-        </label>
-        <label>Annee
-            <input name="publication_year" value="{{ filters.publication_year }}">
-        </label>
-        <button type="submit">Rechercher</button>
-    </form>
-</section>
-
-<section class="card">
-    <h3>Catalogue</h3>
+<section class="card reveal-up">
+    <h3>Catalogue detaille</h3>
     <table>
         <thead>
-        <tr><th>ID</th><th>Titre</th><th>Auteur</th><th>Annee</th><th>Editeur</th><th>ISBN</th><th>Total</th><th>Disponibles</th><th>Action</th></tr>
+        <tr><th>ID</th><th>Titre</th><th>Auteur</th><th>Annee</th><th>Editeur</th><th>ISBN</th><th>Stock</th><th>Action rapide</th></tr>
         </thead>
         <tbody>
         {% for book in books %}
@@ -72,17 +78,21 @@
             <td>{{ book.publication_year or '-' }}</td>
             <td>{{ book.publisher or '-' }}</td>
             <td>{{ book.isbn or '-' }}</td>
-            <td>{{ book.total_copies }}</td>
-            <td>{{ book.available_copies }}</td>
             <td>
-                <form method="post" action="{{ url_for('update_book_availability', book_id=book.id) }}" class="inline-form">
+                <div class="stock-inline">
+                    <small>{{ book.available_copies }} / {{ book.total_copies }}</small>
+                    <div class="stock-bar"><span style="width: {{ (book.available_copies / book.total_copies * 100) if book.total_copies else 0 }}%"></span></div>
+                </div>
+            </td>
+            <td>
+                <form method="post" action="{{ url_for('update_book_availability', book_id=book.id) }}" class="inline-form stock-form">
                     <input name="available_copies" type="number" min="0" max="{{ book.total_copies }}" value="{{ book.available_copies }}" required>
-                    <button type="submit">Maj dispo</button>
+                    <button type="submit">Maj</button>
                 </form>
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="9">Aucun ouvrage.</td></tr>
+        <tr><td colspan="8">Aucun ouvrage.</td></tr>
         {% endfor %}
         </tbody>
     </table>
