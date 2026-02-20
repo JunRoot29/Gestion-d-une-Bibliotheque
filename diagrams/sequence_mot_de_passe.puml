@@ -14,7 +14,7 @@ APP -> APP : Verifier new_password >= 6
 APP -> APP : Verifier confirmation == nouveau
 APP -> APP : Verifier current_password via hash
 
-alt Validation echoue
+alt [Validation echoue]
   APP --> UI : Erreur (mot de passe non modifie)
 else Validation OK
   APP -> DB : UPDATE users SET password_hash=generate_password_hash(new_password)
@@ -27,7 +27,7 @@ UI -> APP : POST /users/{id}/password
 APP -> APP : Verifier nouveau mot de passe >= 6
 APP -> DB : Charger compte cible role='user'
 
-alt Usager introuvable ou role invalide
+alt [Usager introuvable ou role invalide]
   APP --> UI : Erreur (reinitialisation impossible)
 else Cible valide
   APP -> DB : UPDATE users SET password_hash=generate_password_hash(new_password)

@@ -1,14 +1,14 @@
 @startuml
 class Utilisateur {
   +id: int
-  +full_name: str
-  +email: str
-  +phone: str
+  +full_name: String
+  +email: String
+  +phone: String
   +user_type: TypeUsager
   +role: RoleApplicatif
-  +password_hash: str
-  +is_suspended: bool
-  +suspension_reason: str
+  +password_hash: String
+  +is_suspended: Boolean
+  +suspension_reason: String
   +suspension_origin: OrigineSuspension
   +suspension_date: date
   +changerMotDePasse(): bool
@@ -32,10 +32,10 @@ enum OrigineSuspension {
 
 class Livre {
   +id: int
-  +title: str
-  +author: str
-  +isbn: str
-  +publisher: str
+  +title: String
+  +author: String
+  +isbn: String
+  +publisher: String
   +publication_year: int
   +total_copies: int
   +available_copies: int
@@ -80,16 +80,16 @@ class ServiceSuspension {
   +syncUserSuspensions()
 }
 
-Utilisateur "1" -- "0..*" DemandeEmprunt
-Livre "1" -- "0..*" DemandeEmprunt
-Utilisateur "1" -- "0..*" Emprunt
-Livre "1" -- "0..*" Emprunt
-Utilisateur "1" -- "0..*" Reservation
-Livre "1" -- "0..*" Reservation
+Utilisateur "1" -- "0..*" DemandeEmprunt : effectue
+Livre "1" -- "0..*" DemandeEmprunt : concerne
+Utilisateur "1" -- "0..*" Emprunt : possede
+Livre "1" -- "0..*" Emprunt : fait l'objet de
+Utilisateur "1" -- "0..*" Reservation : cree
+Livre "1" -- "0..*" Reservation : reserve
 
-DemandeEmprunt ..> Emprunt : approved -> creer emprunt
-Emprunt ..> Utilisateur : retard -> suspension auto
-ServiceCompte ..> Utilisateur
-ServiceSuspension ..> Utilisateur
-ServiceSuspension ..> Emprunt
+DemandeEmprunt ..> Emprunt : <<create>> si approuvee
+Emprunt ..> Utilisateur : retard => suspension auto
+ServiceCompte ..> Utilisateur : <<service>>
+ServiceSuspension ..> Utilisateur : <<service>>
+ServiceSuspension ..> Emprunt : <<service>>
 @enduml

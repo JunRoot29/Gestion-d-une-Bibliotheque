@@ -10,7 +10,7 @@ UI -> APP : POST /loans (action=return, loan_id)
 APP -> DB : sync_user_suspensions()
 APP -> DB : Charger emprunt par loan_id
 
-alt Emprunt introuvable ou deja retourne
+alt [Emprunt introuvable ou deja retourne]
   APP --> UI : Erreur (retour impossible)
 else Emprunt actif
   APP -> DB : UPDATE loans SET return_date = date('now')

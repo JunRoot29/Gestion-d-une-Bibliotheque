@@ -43,13 +43,12 @@ rectangle "Systeme de gestion de bibliotheque" {
   usecase "Visualiser indicateurs et graphes" as UC29
 }
 
+U --|> V
+
 V --> UC1
-V --> UC2
 V --> UC3
 V --> UC4
 
-U --> UC1
-U --> UC2
 U --> UC4
 U --> UC5
 U --> UC6
@@ -74,15 +73,15 @@ A --> UC26
 A --> UC27
 A --> UC28
 
-UC2 .> UC1 : <<extend>>
-UC18 .> UC19 : <<include>>
-UC18 .> UC20 : <<include>>
-UC18 .> UC21 : <<include>>
-UC18 .> UC22 : <<include>>
-UC18 .> UC23 : <<include>>
-UC24 .> UC25 : <<include>>
-UC18 .> UC25 : <<include>>
-UC9 .> UC25 : <<include>>
-UC10 .> UC29 : <<include>>
-UC28 .> UC29 : <<include>>
+UC2 ..> UC1 : <<extend>>
+UC18 ..> UC21 : <<include>>
+UC18 ..> UC22 : <<include>>
+UC18 ..> UC23 : <<include>>
+UC19 ..> UC18 : <<extend>>
+UC20 ..> UC18 : <<extend>>
+UC24 ..> UC25 : <<include>>
+UC18 ..> UC25 : <<include>>
+UC27 ..> UC26 : <<include>>
+UC29 ..> UC10 : <<extend>>
+UC29 ..> UC28 : <<extend>>
 @enduml

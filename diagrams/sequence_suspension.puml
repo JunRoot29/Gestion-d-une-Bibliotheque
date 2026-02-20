@@ -9,7 +9,7 @@ A -> UI : Suspendre un usager
 UI -> APP : POST /users/{id}/suspend (reason)
 APP -> DB : Charger utilisateur role='user'
 
-alt Compte introuvable
+alt [Compte introuvable]
   APP --> UI : Erreur (usager introuvable)
 else Compte valide
   APP -> DB : UPDATE users SET
